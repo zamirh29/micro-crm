@@ -8,6 +8,7 @@ import { getCompanyProfile } from "@/lib/company"
 import { quoteEmail } from "@/components/email/quote-email"
 import { generateQuoteNumber, formatDate } from "@/lib/utils"
 import { assertDocumentCreationAllowed } from "@/lib/limits"
+import { logActivity } from "@/lib/activity"
 import type { QuoteStatus } from "@/types/database"
 
 interface LineItem {
@@ -101,6 +102,15 @@ export async function createQuote(formData: FormData) {
   const { error: itemsError } = await supabase.from("quote_items").insert(quoteItems)
   if (itemsError) throw itemsError
 
+  await logActivity(supabase, {
+    orgId: membership.org_id,
+    userId: user.id,
+    action: "created",
+    entity: "quote",
+    entityId: quote.id,
+    label: `Quote ${quote.number} — ${title}`,
+  })
+
   revalidatePath("/dashboard/quotes")
   redirect("/dashboard/quotes")
 }
@@ -111,6 +121,13 @@ export async function updateQuote(id: string, formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect("/login")
+
+  const { data: membership } = await supabase
+    .from("memberships")
+    .select("org_id")
+    .eq("user_id", user.id)
+    .single()
+  if (!membership) redirect("/login")
 
   const title = formData.get("title") as string
   const description = (formData.get("description") as string) || null
@@ -156,6 +173,15 @@ export async function updateQuote(id: string, formData: FormData) {
   const { error: itemsError } = await supabase.from("quote_items").insert(quoteItems)
   if (itemsError) throw itemsError
 
+  await logActivity(supabase, {
+    orgId: membership.org_id,
+    userId: user.id,
+    action: "updated",
+    entity: "quote",
+    entityId: id,
+    label: `Quote ${title}`,
+  })
+
   revalidatePath("/dashboard/quotes")
   revalidatePath(`/dashboard/quotes/${id}`)
 }
@@ -167,9 +193,39 @@ export async function deleteQuote(id: string) {
   } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
+  const { data: membership } = await supabase
+    .from("memberships")
+    .select("org_id")
+    .eq("user_id", user.id)
+    .single()
+  if (!membership) redirect("/login")
+
+  const { data: quote } = await supabase
+    .from("quotes")
+    .select("*")
+    .eq("id", id)
+    .single()
+
+  const { data: items } = await supabase
+    .from("quote_items")
+    .select("*")
+    .eq("quote_id", id)
+
   await supabase.from("quote_items").delete().eq("quote_id", id)
   const { error } = await supabase.from("quotes").delete().eq("id", id)
   if (error) throw error
+
+  if (quote) {
+    await logActivity(supabase, {
+      orgId: membership.org_id,
+      userId: user.id,
+      action: "deleted",
+      entity: "quote",
+      entityId: id,
+      label: `Quote ${quote.number} — ${quote.title}`,
+      payload: { row: quote, items: items ?? [] },
+    })
+  }
 
   revalidatePath("/dashboard/quotes")
   redirect("/dashboard/quotes")
@@ -199,6 +255,15 @@ export async function sendQuote(id: string) {
     .eq("id", id)
 
   if (error) throw error
+
+  await logActivity(supabase, {
+    orgId: quote.org_id,
+    userId: user.id,
+    action: "updated",
+    entity: "quote",
+    entityId: id,
+    label: `Quote ${quote.number} sent`,
+  })
 
   const contact = quote.contacts as unknown as {
     first_name: string
@@ -311,6 +376,15 @@ export async function convertToInvoice(id: string) {
 
   const { error: itemsError } = await supabase.from("invoice_items").insert(invoiceItems)
   if (itemsError) throw itemsError
+
+  await logActivity(supabase, {
+    orgId: quote.org_id,
+    userId: user.id,
+    action: "created",
+    entity: "invoice",
+    entityId: invoice.id,
+    label: `Invoice ${number} — ${quote.title} (from quote)`,
+  })
 
   await supabase
     .from("quotes")

@@ -16,6 +16,7 @@ import {
   BarChart3,
   CalendarCheck,
   Mail,
+  History,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { signOut } from "@/app/dashboard/actions"
@@ -51,6 +52,11 @@ export default function Sidebar({
       label: "Report Emails",
       href: "/dashboard/reports/subscriptions",
       icon: Mail,
+    },
+    {
+      label: "Activity",
+      href: "/dashboard/activity",
+      icon: History,
     },
     { label: "Settings", href: "/dashboard/settings", icon: Cog },
     ...(isSuperAdmin

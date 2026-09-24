@@ -30,6 +30,7 @@ export const PLANS = {
       "Custom branding",
       "Email templates",
       "Automated report emails",
+      "10-day activity log & restore",
       "Priority support",
     ],
   },

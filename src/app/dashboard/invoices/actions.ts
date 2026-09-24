@@ -8,6 +8,7 @@ import { getCompanyProfile } from "@/lib/company"
 import { invoiceEmail } from "@/components/email/invoice-email"
 import { generateInvoiceNumber, formatDate } from "@/lib/utils"
 import { assertDocumentCreationAllowed } from "@/lib/limits"
+import { logActivity } from "@/lib/activity"
 import type { InvoiceStatus } from "@/types/database"
 
 interface LineItem {
@@ -106,6 +107,15 @@ export async function createInvoice(formData: FormData) {
     .insert(invoiceItems)
   if (itemsError) throw itemsError
 
+  await logActivity(supabase, {
+    orgId: membership.org_id,
+    userId: user.id,
+    action: "created",
+    entity: "invoice",
+    entityId: invoice.id,
+    label: `Invoice ${invoice.number} — ${title}`,
+  })
+
   revalidatePath("/dashboard/invoices")
   redirect("/dashboard/invoices")
 }
@@ -116,6 +126,13 @@ export async function updateInvoice(id: string, formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect("/login")
+
+  const { data: membership } = await supabase
+    .from("memberships")
+    .select("org_id")
+    .eq("user_id", user.id)
+    .single()
+  if (!membership) redirect("/login")
 
   const title = formData.get("title") as string
   const description = (formData.get("description") as string) || null
@@ -166,6 +183,15 @@ export async function updateInvoice(id: string, formData: FormData) {
     .insert(invoiceItems)
   if (itemsError) throw itemsError
 
+  await logActivity(supabase, {
+    orgId: membership.org_id,
+    userId: user.id,
+    action: "updated",
+    entity: "invoice",
+    entityId: id,
+    label: `Invoice ${title}`,
+  })
+
   revalidatePath("/dashboard/invoices")
   revalidatePath(`/dashboard/invoices/${id}`)
 }
@@ -177,9 +203,39 @@ export async function deleteInvoice(id: string) {
   } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
+  const { data: membership } = await supabase
+    .from("memberships")
+    .select("org_id")
+    .eq("user_id", user.id)
+    .single()
+  if (!membership) redirect("/login")
+
+  const { data: invoice } = await supabase
+    .from("invoices")
+    .select("*")
+    .eq("id", id)
+    .single()
+
+  const { data: items } = await supabase
+    .from("invoice_items")
+    .select("*")
+    .eq("invoice_id", id)
+
   await supabase.from("invoice_items").delete().eq("invoice_id", id)
   const { error } = await supabase.from("invoices").delete().eq("id", id)
   if (error) throw error
+
+  if (invoice) {
+    await logActivity(supabase, {
+      orgId: membership.org_id,
+      userId: user.id,
+      action: "deleted",
+      entity: "invoice",
+      entityId: id,
+      label: `Invoice ${invoice.number} — ${invoice.title}`,
+      payload: { row: invoice, items: items ?? [] },
+    })
+  }
 
   revalidatePath("/dashboard/invoices")
   redirect("/dashboard/invoices")
@@ -209,6 +265,15 @@ export async function sendInvoice(id: string) {
     .eq("id", id)
 
   if (error) throw error
+
+  await logActivity(supabase, {
+    orgId: invoice.org_id,
+    userId: user.id,
+    action: "updated",
+    entity: "invoice",
+    entityId: id,
+    label: `Invoice ${invoice.number} sent`,
+  })
 
   const contact = invoice.contacts as unknown as {
     first_name: string
@@ -250,6 +315,12 @@ export async function markAsPaid(id: string) {
   } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
+  const { data: invoice } = await supabase
+    .from("invoices")
+    .select("*")
+    .eq("id", id)
+    .single()
+
   const { error } = await supabase
     .from("invoices")
     .update({
@@ -260,6 +331,17 @@ export async function markAsPaid(id: string) {
     .eq("id", id)
 
   if (error) throw error
+
+  if (invoice) {
+    await logActivity(supabase, {
+      orgId: invoice.org_id,
+      userId: user.id,
+      action: "updated",
+      entity: "invoice",
+      entityId: id,
+      label: `Invoice ${invoice.number} paid`,
+    })
+  }
 
   revalidatePath("/dashboard/invoices")
   revalidatePath(`/dashboard/invoices/${id}`)
