@@ -105,7 +105,7 @@ export default function NewInvoicePage() {
       fd.set("items", JSON.stringify(items))
 
       await createInvoice(fd)
-      router.push("/invoices")
+      router.push("/dashboard/invoices")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
       setLoading(false)

@@ -92,8 +92,8 @@ export async function createQuote(formData: FormData) {
   const { error: itemsError } = await supabase.from("quote_items").insert(quoteItems)
   if (itemsError) throw itemsError
 
-  revalidatePath("/quotes")
-  redirect("/quotes")
+  revalidatePath("/dashboard/quotes")
+  redirect("/dashboard/quotes")
 }
 
 export async function updateQuote(id: string, formData: FormData) {
@@ -147,8 +147,8 @@ export async function updateQuote(id: string, formData: FormData) {
   const { error: itemsError } = await supabase.from("quote_items").insert(quoteItems)
   if (itemsError) throw itemsError
 
-  revalidatePath("/quotes")
-  revalidatePath(`/quotes/${id}`)
+  revalidatePath("/dashboard/quotes")
+  revalidatePath(`/dashboard/quotes/${id}`)
 }
 
 export async function deleteQuote(id: string) {
@@ -162,8 +162,8 @@ export async function deleteQuote(id: string) {
   const { error } = await supabase.from("quotes").delete().eq("id", id)
   if (error) throw error
 
-  revalidatePath("/quotes")
-  redirect("/quotes")
+  revalidatePath("/dashboard/quotes")
+  redirect("/dashboard/quotes")
 }
 
 export async function sendQuote(id: string) {
@@ -206,7 +206,7 @@ export async function sendQuote(id: string) {
       total: quote.total,
       currency: quote.currency,
       validUntil: formatDate(quote.valid_until),
-      viewUrl: `${baseUrl}/quotes/${quote.id}`,
+      viewUrl: `${baseUrl}/dashboard/quotes/${quote.id}`,
     })
 
     await sendEmail({
@@ -216,8 +216,8 @@ export async function sendQuote(id: string) {
     })
   }
 
-  revalidatePath("/quotes")
-  revalidatePath(`/quotes/${id}`)
+  revalidatePath("/dashboard/quotes")
+  revalidatePath(`/dashboard/quotes/${id}`)
 }
 
 export async function convertToInvoice(id: string) {
@@ -300,7 +300,7 @@ export async function convertToInvoice(id: string) {
     })
     .eq("id", id)
 
-  revalidatePath("/quotes")
-  revalidatePath("/invoices")
-  redirect(`/invoices/${invoice.id}`)
+  revalidatePath("/dashboard/quotes")
+  revalidatePath("/dashboard/invoices")
+  redirect(`/dashboard/invoices/${invoice.id}`)
 }

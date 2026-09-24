@@ -92,7 +92,7 @@ export default function NewQuotePage() {
     <div className="max-w-3xl space-y-6">
       <div className="flex items-center gap-4">
         <Link
-          href="/quotes"
+          href="/dashboard/quotes"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -285,7 +285,7 @@ export default function NewQuotePage() {
 
         <div className="flex items-center justify-end gap-3">
           <Link
-            href="/quotes"
+            href="/dashboard/quotes"
             className="inline-flex items-center rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
           >
             Cancel

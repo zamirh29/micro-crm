@@ -23,7 +23,7 @@ export default async function RemindersPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Reminders</h1>
         <Link
-          href="/reminders/new"
+          href="/dashboard/reminders/new"
           className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
         >
           New Reminder

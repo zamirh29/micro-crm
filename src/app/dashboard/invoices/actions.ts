@@ -97,8 +97,8 @@ export async function createInvoice(formData: FormData) {
     .insert(invoiceItems)
   if (itemsError) throw itemsError
 
-  revalidatePath("/invoices")
-  redirect("/invoices")
+  revalidatePath("/dashboard/invoices")
+  redirect("/dashboard/invoices")
 }
 
 export async function updateInvoice(id: string, formData: FormData) {
@@ -157,8 +157,8 @@ export async function updateInvoice(id: string, formData: FormData) {
     .insert(invoiceItems)
   if (itemsError) throw itemsError
 
-  revalidatePath("/invoices")
-  revalidatePath(`/invoices/${id}`)
+  revalidatePath("/dashboard/invoices")
+  revalidatePath(`/dashboard/invoices/${id}`)
 }
 
 export async function deleteInvoice(id: string) {
@@ -172,8 +172,8 @@ export async function deleteInvoice(id: string) {
   const { error } = await supabase.from("invoices").delete().eq("id", id)
   if (error) throw error
 
-  revalidatePath("/invoices")
-  redirect("/invoices")
+  revalidatePath("/dashboard/invoices")
+  redirect("/dashboard/invoices")
 }
 
 export async function sendInvoice(id: string) {
@@ -216,7 +216,7 @@ export async function sendInvoice(id: string) {
       total: invoice.total,
       currency: invoice.currency,
       dueDate: formatDate(invoice.due_date),
-      viewUrl: `${baseUrl}/invoices/${invoice.id}`,
+      viewUrl: `${baseUrl}/dashboard/invoices/${invoice.id}`,
     })
 
     await sendEmail({
@@ -226,8 +226,8 @@ export async function sendInvoice(id: string) {
     })
   }
 
-  revalidatePath("/invoices")
-  revalidatePath(`/invoices/${id}`)
+  revalidatePath("/dashboard/invoices")
+  revalidatePath(`/dashboard/invoices/${id}`)
 }
 
 export async function markAsPaid(id: string) {
@@ -248,6 +248,6 @@ export async function markAsPaid(id: string) {
 
   if (error) throw error
 
-  revalidatePath("/invoices")
-  revalidatePath(`/invoices/${id}`)
+  revalidatePath("/dashboard/invoices")
+  revalidatePath(`/dashboard/invoices/${id}`)
 }

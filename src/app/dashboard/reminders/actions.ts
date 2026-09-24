@@ -39,7 +39,7 @@ export async function createReminder(data: {
 
   if (error) throw error.message
 
-  revalidatePath("/reminders")
+  revalidatePath("/dashboard/reminders")
 }
 
 export async function updateReminder(
@@ -58,7 +58,7 @@ export async function updateReminder(
 
   if (error) throw error.message
 
-  revalidatePath("/reminders")
+  revalidatePath("/dashboard/reminders")
 }
 
 export async function deleteReminder(id: string) {
@@ -67,7 +67,7 @@ export async function deleteReminder(id: string) {
 
   if (error) throw error.message
 
-  revalidatePath("/reminders")
+  revalidatePath("/dashboard/reminders")
 }
 
 export async function completeReminder(id: string) {
@@ -79,5 +79,5 @@ export async function completeReminder(id: string) {
 
   if (error) throw error.message
 
-  revalidatePath("/reminders")
+  revalidatePath("/dashboard/reminders")
 }

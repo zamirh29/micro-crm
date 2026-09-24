@@ -62,7 +62,7 @@ export default function NewReminderPage() {
         invoice_id: form.invoice_id || null,
         scheduled_at: form.scheduled_at,
       })
-      router.push("/reminders")
+      router.push("/dashboard/reminders")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
       setLoading(false)

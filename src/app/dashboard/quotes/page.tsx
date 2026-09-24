@@ -44,7 +44,7 @@ export default async function QuotesPage() {
           </p>
         </div>
         <Link
-          href="/quotes/new"
+          href="/dashboard/quotes/new"
           className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" />
@@ -92,7 +92,7 @@ export default async function QuotesPage() {
                     >
                       <td className="px-4 py-3">
                         <Link
-                          href={`/quotes/${quote.id}`}
+                          href={`/dashboard/quotes/${quote.id}`}
                           className="font-medium text-primary hover:underline"
                         >
                           {quote.number}
