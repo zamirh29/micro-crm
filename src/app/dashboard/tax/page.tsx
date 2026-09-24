@@ -15,6 +15,7 @@ import {
   MTD_INCOME_TAX_SCHEDULE,
   formatPounds,
 } from "@/lib/uk-tax"
+import TaxEstimator from "@/components/tax-estimator"
 
 export const dynamic = "force-dynamic"
 
@@ -284,6 +285,8 @@ export default async function TaxReportPage() {
           </div>
         </div>
       </div>
+
+      <TaxEstimator initialIncome={grossIncome} />
     </div>
   )
 }
