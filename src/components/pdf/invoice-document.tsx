@@ -3,6 +3,7 @@ import {
   Page,
   Text,
   View,
+  Image,
   StyleSheet,
 } from "@react-pdf/renderer"
 import type { Invoice, InvoiceItem, Contact } from "@/types/database"
@@ -21,6 +22,12 @@ const styles = StyleSheet.create({
   },
   companySection: {
     flex: 1,
+  },
+  logoImage: {
+    width: 64,
+    height: 64,
+    objectFit: "contain",
+    marginBottom: 8,
   },
   companyName: {
     fontSize: 18,
@@ -181,8 +188,11 @@ interface InvoiceDocumentProps {
   items: InvoiceItem[]
   contact: Contact | null
   companyName?: string
+  companyLogo?: string
   companyAddress?: string
+  companyPhone?: string
   companyEmail?: string
+  companyWebsite?: string
 }
 
 function formatPence(amount: number, currency = "GBP"): string {
@@ -205,8 +215,11 @@ export default function InvoiceDocument({
   items,
   contact,
   companyName = "MicroCRM",
+  companyLogo,
   companyAddress = "",
+  companyPhone = "",
   companyEmail = "",
+  companyWebsite = "",
 }: InvoiceDocumentProps) {
   const statusColor =
     invoice.status === "paid"
@@ -222,12 +235,22 @@ export default function InvoiceDocument({
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View style={styles.companySection}>
+            {companyLogo && (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image src={companyLogo} style={styles.logoImage} />
+            )}
             <Text style={styles.companyName}>{companyName}</Text>
             {companyAddress && (
               <Text style={styles.companyDetail}>{companyAddress}</Text>
             )}
+            {companyPhone && (
+              <Text style={styles.companyDetail}>{companyPhone}</Text>
+            )}
             {companyEmail && (
               <Text style={styles.companyDetail}>{companyEmail}</Text>
+            )}
+            {companyWebsite && (
+              <Text style={styles.companyDetail}>{companyWebsite}</Text>
             )}
           </View>
           <View style={styles.invoiceSection}>

@@ -12,6 +12,7 @@ import {
   LogOut,
   Landmark,
   ShieldCheck,
+  Cog,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { signOut } from "@/app/dashboard/actions"
@@ -31,6 +32,7 @@ export default function Sidebar({ isSuperAdmin = false }: SidebarProps) {
     { label: "Reminders", href: "/dashboard/reminders", icon: Bell },
     { label: "Billing", href: "/dashboard/billing", icon: Settings },
     { label: "Tax Report", href: "/dashboard/tax", icon: Landmark },
+    { label: "Settings", href: "/dashboard/settings", icon: Cog },
     ...(isSuperAdmin
       ? [
           {

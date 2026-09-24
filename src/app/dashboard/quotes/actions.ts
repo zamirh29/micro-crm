@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/resend"
+import { getCompanyProfile } from "@/lib/company"
 import { quoteEmail } from "@/components/email/quote-email"
 import { generateQuoteNumber, formatDate } from "@/lib/utils"
 import { assertDocumentCreationAllowed } from "@/lib/limits"
@@ -207,6 +208,7 @@ export async function sendQuote(id: string) {
 
   if (contact?.email) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+    const company = await getCompanyProfile(supabase, quote.org_id)
     const html = quoteEmail({
       recipientName: `${contact.first_name} ${contact.last_name}`.trim(),
       number: quote.number,
@@ -215,11 +217,14 @@ export async function sendQuote(id: string) {
       currency: quote.currency,
       validUntil: formatDate(quote.valid_until),
       viewUrl: `${baseUrl}/dashboard/quotes/${quote.id}`,
+      companyName: company.name,
+      companyPhone: company.phone ?? undefined,
+      companyEmail: company.email ?? undefined,
     })
 
     await sendEmail({
       to: [contact.email],
-      subject: `Quote ${quote.number} from Your Business`,
+      subject: `Quote ${quote.number} from ${company.name}`,
       html,
     })
   }

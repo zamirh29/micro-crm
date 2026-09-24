@@ -7,6 +7,11 @@ export type MembershipRole = "owner" | "admin" | "member" | "viewer"
 export interface Organization {
   id: string
   name: string
+  logo_data: string | null
+  address: string | null
+  phone: string | null
+  email: string | null
+  website: string | null
   created_at: string
 }
 

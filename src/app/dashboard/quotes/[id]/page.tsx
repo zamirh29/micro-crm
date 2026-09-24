@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { formatCurrency, formatDate, cn } from "@/lib/utils"
+import { getCompanyProfile } from "@/lib/company"
 import type { QuoteStatus, QuoteItem } from "@/types/database"
 import { sendQuote, deleteQuote, convertToInvoice } from "../actions"
 
@@ -51,8 +52,55 @@ export default async function QuoteDetailPage({
 
   const items = quote.quote_items as QuoteItem[]
 
+  const company = await getCompanyProfile(supabase, quote.org_id)
+
+  const companyLines = [
+    company.address,
+    company.phone,
+    company.email,
+    company.website,
+  ].filter(Boolean)
+
   return (
     <div className="space-y-6">
+      <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {company.logoData ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={company.logoData}
+                alt={company.name}
+                className="h-14 w-14 rounded-md object-contain"
+              />
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-md bg-primary/10">
+                <span className="text-lg font-bold text-primary">
+                  {company.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+            <div>
+              <p className="text-lg font-bold">{company.name}</p>
+              {companyLines.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {companyLines.join(" • ")}
+                </p>
+              )}
+            </div>
+          </div>
+          <a
+            href={`/api/quotes/${quote.id}/pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
+          >
+            <Download className="h-4 w-4" />
+            PDF
+          </a>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
@@ -81,15 +129,6 @@ export default async function QuoteDetailPage({
         </div>
 
         <div className="flex items-center gap-2">
-          <a
-            href={`/api/quotes/${quote.id}/pdf`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
-          >
-            <Download className="h-4 w-4" />
-            PDF
-          </a>
           {quote.status === "draft" && (
             <form action={sendQuote.bind(null, quote.id)}>
               <button

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/resend"
+import { getCompanyProfile } from "@/lib/company"
 import { invoiceEmail } from "@/components/email/invoice-email"
 import { generateInvoiceNumber, formatDate } from "@/lib/utils"
 import { assertDocumentCreationAllowed } from "@/lib/limits"
@@ -217,6 +218,7 @@ export async function sendInvoice(id: string) {
 
   if (contact?.email) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+    const company = await getCompanyProfile(supabase, invoice.org_id)
     const html = invoiceEmail({
       recipientName: `${contact.first_name} ${contact.last_name}`.trim(),
       number: invoice.number,
@@ -225,11 +227,14 @@ export async function sendInvoice(id: string) {
       currency: invoice.currency,
       dueDate: formatDate(invoice.due_date),
       viewUrl: `${baseUrl}/dashboard/invoices/${invoice.id}`,
+      companyName: company.name,
+      companyPhone: company.phone ?? undefined,
+      companyEmail: company.email ?? undefined,
     })
 
     await sendEmail({
       to: [contact.email],
-      subject: `Invoice ${invoice.number} from Your Business`,
+      subject: `Invoice ${invoice.number} from ${company.name}`,
       html,
     })
   }
