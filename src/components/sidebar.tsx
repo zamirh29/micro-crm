@@ -12,7 +12,7 @@ import {
   LogOut,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { signOut } from "@/app/(dashboard)/actions"
+import { signOut } from "@/app/dashboard/actions"
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -20,6 +20,7 @@ const navItems = [
   { label: "Quotes", href: "/dashboard/quotes", icon: FileText },
   { label: "Invoices", href: "/dashboard/invoices", icon: Receipt },
   { label: "Reminders", href: "/dashboard/reminders", icon: Bell },
+    { label: "Billing", href: "/dashboard/billing", icon: Settings },
 ]
 
 export default function Sidebar() {
@@ -56,19 +57,6 @@ export default function Sidebar() {
       </nav>
 
       <div className="border-t border-sidebar-border px-3 py-4 space-y-2">
-        <Link
-          href="/dashboard/settings"
-          className={cn(
-            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-            pathname === "/dashboard/settings"
-              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          )}
-        >
-          <Settings className="h-4 w-4" />
-          Settings
-        </Link>
-
         <form action={signOut}>
           <button
             type="submit"

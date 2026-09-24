@@ -54,8 +54,8 @@ export async function createCheckoutSession() {
     subscription_data: hasPastSubscription
       ? undefined
       : { trial_period_days: 30 },
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?success=true`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?canceled=true`,
+    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=true`,
+    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=true`,
     metadata: { user_id: user.id },
   })
 
@@ -82,7 +82,7 @@ export async function createPortalSession() {
 
   const session = await stripe.billingPortal.sessions.create({
     customer: profile.stripe_customer_id,
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing`,
+    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
   })
 
   if (!session.url) throw new Error("Failed to create portal session")
