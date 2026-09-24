@@ -3,6 +3,7 @@ import { Plus } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { formatCurrency, formatDate, cn } from "@/lib/utils"
 import type { QuoteStatus } from "@/types/database"
+import ExportCsvButton from "@/components/export-csv-button"
 
 const statusStyles: Record<QuoteStatus, string> = {
   draft: "bg-gray-100 text-gray-800",
@@ -43,13 +44,54 @@ export default async function QuotesPage() {
             Manage your quotes and proposals
           </p>
         </div>
-        <Link
-          href="/dashboard/quotes/new"
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" />
-          New Quote
-        </Link>
+        <div className="flex items-center gap-3">
+          <ExportCsvButton
+            filename="quotes.csv"
+            headers={[
+              "Number",
+              "Title",
+              "Customer",
+              "Company",
+              "Total",
+              "Currency",
+              "Status",
+              "Valid Until",
+              "Created",
+            ]}
+            rows={
+              quotes
+                ? quotes.map((q) => {
+                    const contact = q.contacts as {
+                      first_name: string
+                      last_name: string
+                      company: string | null
+                    } | null
+                    return [
+                      q.number,
+                      q.title,
+                      contact
+                        ? `${contact.first_name} ${contact.last_name}`
+                        : "",
+                      contact?.company ?? "",
+                      q.total,
+                      q.currency,
+                      q.status,
+                      formatDate(q.valid_until),
+                      formatDate(q.created_at),
+                    ]
+                  })
+                : []
+            }
+            disabled={!quotes || quotes.length === 0}
+          />
+          <Link
+            href="/dashboard/quotes/new"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" />
+            New Quote
+          </Link>
+        </div>
       </div>
 
       <div className="rounded-lg border border-border bg-card shadow-sm">

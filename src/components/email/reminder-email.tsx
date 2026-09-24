@@ -6,6 +6,9 @@ interface ReminderEmailProps {
   description?: string | null
   scheduledAt: string
   viewUrl?: string | null
+  companyName?: string
+  companyPhone?: string
+  companyEmail?: string
 }
 
 export function reminderEmail({
@@ -14,6 +17,9 @@ export function reminderEmail({
   description,
   scheduledAt,
   viewUrl,
+  companyName = "MicroCRM",
+  companyPhone,
+  companyEmail,
 }: ReminderEmailProps): string {
   return `
 <!DOCTYPE html>
@@ -29,7 +35,7 @@ export function reminderEmail({
         <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
           <tr>
             <td style="background-color: #4f46e5; padding: 24px 32px;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 600;">MicroCRM</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 600;">${companyName}</h1>
             </td>
           </tr>
           <tr>
@@ -64,7 +70,9 @@ export function reminderEmail({
                 </tr>
               </table>` : ""}
               <p style="margin: 0; color: #a1a1aa; font-size: 12px; line-height: 1.6;">
-                This reminder was sent automatically via MicroCRM.
+                ${companyName}
+                ${companyEmail ? ` &middot; <a href="mailto:${companyEmail}" style="color: #a1a1aa;">${companyEmail}</a>` : ""}
+                ${companyPhone ? ` &middot; ${companyPhone}` : ""}
               </p>
             </td>
           </tr>

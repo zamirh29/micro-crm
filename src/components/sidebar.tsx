@@ -19,9 +19,15 @@ import { signOut } from "@/app/dashboard/actions"
 
 interface SidebarProps {
   isSuperAdmin?: boolean
+  companyName?: string
+  companyLogo?: string | null
 }
 
-export default function Sidebar({ isSuperAdmin = false }: SidebarProps) {
+export default function Sidebar({
+  isSuperAdmin = false,
+  companyName = "MicroCRM",
+  companyLogo,
+}: SidebarProps) {
   const pathname = usePathname()
 
   const navItems = [
@@ -46,8 +52,18 @@ export default function Sidebar({ isSuperAdmin = false }: SidebarProps) {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-      <div className="flex h-14 items-center border-b border-sidebar-border px-4">
-        <span className="text-lg font-bold tracking-tight">MicroCRM</span>
+      <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
+        {companyLogo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={companyLogo}
+            alt={companyName}
+            className="h-8 w-8 rounded-md object-contain"
+          />
+        ) : null}
+        <span className="truncate text-lg font-bold tracking-tight">
+          {companyName}
+        </span>
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">

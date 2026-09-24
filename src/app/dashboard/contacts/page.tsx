@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { formatDate } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 import type { ContactStatus } from "@/types/database"
+import ExportCsvButton from "@/components/export-csv-button"
 
 const statusStyles: Record<ContactStatus, string> = {
   lead: "bg-yellow-100 text-yellow-800",
@@ -44,13 +45,41 @@ export default async function ContactsPage() {
             Manage your customers and their information.
           </p>
         </div>
-        <Link
-          href="/dashboard/contacts/new"
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" />
-          Add Customer
-        </Link>
+        <div className="flex items-center gap-3">
+          <ExportCsvButton
+            filename="customers.csv"
+            headers={[
+              "First Name",
+              "Last Name",
+              "Email",
+              "Phone",
+              "Company",
+              "Status",
+              "Created",
+            ]}
+            rows={
+              contacts
+                ? contacts.map((c) => [
+                    c.first_name,
+                    c.last_name,
+                    c.email,
+                    c.phone,
+                    c.company,
+                    c.status,
+                    formatDate(c.created_at),
+                  ])
+                : []
+            }
+            disabled={!contacts || contacts.length === 0}
+          />
+          <Link
+            href="/dashboard/contacts/new"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" />
+            Add Customer
+          </Link>
+        </div>
       </div>
 
       <div className="rounded-lg border border-border bg-card">
