@@ -25,6 +25,7 @@ export async function updateCompanyProfile(formData: FormData) {
   const phone = (formData.get("phone") as string)?.trim() || null
   const email = (formData.get("email") as string)?.trim() || null
   const website = (formData.get("website") as string)?.trim() || null
+  const currency = ((formData.get("currency") as string) || "").trim()
 
   const { error } = await supabase
     .from("organizations")
@@ -35,6 +36,7 @@ export async function updateCompanyProfile(formData: FormData) {
       phone,
       email,
       website,
+      currency: currency || "GBP",
     })
     .eq("id", membership.org_id)
 
@@ -43,4 +45,7 @@ export async function updateCompanyProfile(formData: FormData) {
   revalidatePath("/dashboard/settings")
   revalidatePath("/dashboard/quotes")
   revalidatePath("/dashboard/invoices")
+  revalidatePath("/dashboard/reports/customers")
+  revalidatePath("/dashboard/reports/month-end")
+  revalidatePath("/dashboard/tax")
 }

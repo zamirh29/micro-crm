@@ -12,6 +12,7 @@ export interface Organization {
   phone: string | null
   email: string | null
   website: string | null
+  currency: string
   created_at: string
 }
 

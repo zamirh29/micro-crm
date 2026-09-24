@@ -1,0 +1,2 @@
+ALTER TABLE public.organizations
+  ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'GBP';

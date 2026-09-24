@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Loader2, Upload, X, Building2 } from "lucide-react"
 import { updateCompanyProfile } from "./actions"
-import type { CompanyProfile } from "@/lib/company"
+import { CURRENCIES, type CompanyProfile } from "@/lib/company"
 
 interface CompanyProfileFormProps {
   company: CompanyProfile
@@ -216,21 +216,46 @@ export default function CompanyProfileForm({
         </div>
       </div>
 
-      <div>
-        <label
-          htmlFor="website"
-          className="block text-sm font-medium text-foreground"
-        >
-          Website
-        </label>
-        <input
-          id="website"
-          name="website"
-          type="text"
-          defaultValue={company.website ?? ""}
-          className={inputClass}
-          placeholder="https://acme.co.uk"
-        />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label
+            htmlFor="currency"
+            className="block text-sm font-medium text-foreground"
+          >
+            Currency
+          </label>
+          <select
+            id="currency"
+            name="currency"
+            defaultValue={company.currency || "GBP"}
+            className={inputClass}
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.code} — {c.label} ({c.symbol})
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Used on your quotes, invoices and reports.
+          </p>
+        </div>
+        <div>
+          <label
+            htmlFor="website"
+            className="block text-sm font-medium text-foreground"
+          >
+            Website
+          </label>
+          <input
+            id="website"
+            name="website"
+            type="text"
+            defaultValue={company.website ?? ""}
+            className={inputClass}
+            placeholder="https://acme.co.uk"
+          />
+        </div>
       </div>
 
       <div className="flex items-center justify-end gap-3 pt-2">

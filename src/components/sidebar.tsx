@@ -13,6 +13,8 @@ import {
   Landmark,
   ShieldCheck,
   Cog,
+  BarChart3,
+  CalendarCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { signOut } from "@/app/dashboard/actions"
@@ -38,6 +40,12 @@ export default function Sidebar({
     { label: "Reminders", href: "/dashboard/reminders", icon: Bell },
     { label: "Billing", href: "/dashboard/billing", icon: Settings },
     { label: "Tax Report", href: "/dashboard/tax", icon: Landmark },
+    { label: "Sales Report", href: "/dashboard/reports/customers", icon: BarChart3 },
+    {
+      label: "Month-End Report",
+      href: "/dashboard/reports/month-end",
+      icon: CalendarCheck,
+    },
     { label: "Settings", href: "/dashboard/settings", icon: Cog },
     ...(isSuperAdmin
       ? [

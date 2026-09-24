@@ -28,8 +28,8 @@ export default async function SettingsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         <p className="text-sm text-muted-foreground">
-          Your company branding — logo, address and contact details. Used on
-          your quotes and invoices.
+          Your company branding — logo, address, contact details and currency.
+          Used on your quotes, invoices and reports.
         </p>
       </div>
 
