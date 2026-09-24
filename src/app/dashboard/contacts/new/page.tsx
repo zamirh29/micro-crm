@@ -33,14 +33,14 @@ export default function NewContactPage() {
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Contacts
+          Customers
         </Link>
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">New Contact</h1>
+        <h1 className="text-2xl font-bold tracking-tight">New Customer</h1>
         <p className="text-sm text-muted-foreground">
-          Add a new contact to your CRM.
+          Add a new customer to your CRM.
         </p>
       </div>
 
@@ -171,7 +171,7 @@ export default function NewContactPage() {
             name="notes"
             rows={4}
             className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
-            placeholder="Any additional notes about this contact..."
+            placeholder="Any additional notes about this customer..."
           />
         </div>
 
@@ -188,7 +188,7 @@ export default function NewContactPage() {
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {loading ? "Creating..." : "Create Contact"}
+            {loading ? "Creating..." : "Create Customer"}
           </button>
         </div>
       </form>

@@ -16,7 +16,7 @@ import { signOut } from "@/app/dashboard/actions"
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Contacts", href: "/dashboard/contacts", icon: Users },
+  { label: "Customers", href: "/dashboard/contacts", icon: Users },
   { label: "Quotes", href: "/dashboard/quotes", icon: FileText },
   { label: "Invoices", href: "/dashboard/invoices", icon: Receipt },
   { label: "Reminders", href: "/dashboard/reminders", icon: Bell },

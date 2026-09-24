@@ -93,7 +93,7 @@ export default async function ContactDetailPage({
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            Contacts
+            Customers
           </Link>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
@@ -109,7 +109,7 @@ export default async function ContactDetailPage({
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="rounded-lg border border-border bg-card p-6">
-          <h2 className="mb-4 text-lg font-semibold">Contact Information</h2>
+          <h2 className="mb-4 text-lg font-semibold">Customer Information</h2>
           <dl className="space-y-3">
             <div>
               <dt className="text-sm font-medium text-muted-foreground">

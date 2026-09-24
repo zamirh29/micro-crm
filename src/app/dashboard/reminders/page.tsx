@@ -38,7 +38,7 @@ export default async function RemindersPage() {
                 Title
               </th>
               <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                Contact
+Customer
               </th>
               <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
                 Scheduled At

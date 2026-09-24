@@ -71,7 +71,7 @@ export default async function DashboardPage() {
 
   const stats = [
     {
-      label: "Total Contacts",
+      label: "Total Customers",
       value: contactsResult.count ?? 0,
       icon: Users,
       color: "text-blue-600 dark:text-blue-400",
@@ -114,7 +114,7 @@ export default async function DashboardPage() {
       id: c.id,
       type: "contact" as const,
       title: `${c.first_name} ${c.last_name}`,
-      subtitle: "New contact",
+      subtitle: "New customer",
       created_at: c.created_at,
     })),
     ...(recentQuotes ?? []).map((q) => ({
@@ -204,7 +204,7 @@ export default async function DashboardPage() {
             <Bell className="mx-auto mb-3 h-8 w-8 opacity-40" />
             <p>No activity yet.</p>
             <p className="mt-1 text-sm">
-              Start by adding contacts, quotes, or invoices.
+              Start by adding customers, quotes, or invoices.
             </p>
           </div>
         ) : (

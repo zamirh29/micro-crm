@@ -1,11 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, Trash2 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 import { createInvoice } from "../actions"
-import type { Contact } from "@/types/database"
+import CustomerSelect from "@/components/customer-select"
 
 interface LineItem {
   description: string
@@ -25,9 +24,6 @@ export default function NewInvoicePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [contacts, setContacts] = useState<
-    Pick<Contact, "id" | "first_name" | "last_name" | "company">[]
-  >([])
 
   const [form, setForm] = useState({
     contact_id: "",
@@ -42,18 +38,6 @@ export default function NewInvoicePage() {
   const [items, setItems] = useState<LineItem[]>([
     { description: "", quantity: 1, unit_price: 0 },
   ])
-
-  useEffect(() => {
-    const supabase = createClient()
-    async function fetchContacts() {
-      const { data } = await supabase
-        .from("contacts")
-        .select("id, first_name, last_name, company")
-        .order("first_name")
-      if (data) setContacts(data)
-    }
-    fetchContacts()
-  }, [])
 
   function addItem() {
     setItems([...items, { description: "", quantity: 1, unit_price: 0 }])
@@ -131,29 +115,11 @@ export default function NewInvoicePage() {
         <div className="rounded-lg border border-border bg-card p-6 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label
-                htmlFor="contact_id"
-                className="block text-sm font-medium text-foreground"
-              >
-                Contact
-              </label>
-              <select
-                id="contact_id"
-                required
+              <CustomerSelect
                 value={form.contact_id}
-                onChange={(e) =>
-                  setForm({ ...form, contact_id: e.target.value })
-                }
-                className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                <option value="">Select a contact</option>
-                {contacts.map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.first_name} {contact.last_name}
-                    {contact.company ? ` (${contact.company})` : ""}
-                  </option>
-                ))}
-              </select>
+                onChange={(contact_id) => setForm({ ...form, contact_id })}
+                required
+              />
             </div>
 
             <div>

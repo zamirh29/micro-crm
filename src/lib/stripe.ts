@@ -11,7 +11,7 @@ export const PLANS = {
     priceId: null,
     description: "Perfect for getting started with a few clients.",
     features: [
-      "Up to 50 contacts",
+      "Up to 50 customers",
       "5 quotes per month",
       "3 invoices per month",
       "Basic reminders",

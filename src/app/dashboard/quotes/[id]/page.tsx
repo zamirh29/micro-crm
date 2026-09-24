@@ -227,7 +227,7 @@ export default async function QuoteDetailPage({
               {contact && (
                 <>
                   <div className="border-t border-border pt-3">
-                    <dt className="text-muted-foreground mb-1">Contact</dt>
+                    <dt className="text-muted-foreground mb-1">Customer</dt>
                     <dd className="font-medium">
                       {contact.first_name} {contact.last_name}
                     </dd>

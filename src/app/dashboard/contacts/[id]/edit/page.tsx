@@ -48,9 +48,9 @@ export default async function EditContactPage({
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Edit Contact</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Edit Customer</h1>
         <p className="text-sm text-muted-foreground">
-          Update the details for this contact.
+          Update the details for this customer.
         </p>
       </div>
 

@@ -4,13 +4,7 @@ import { useState, useEffect } from "react"
 import { ArrowLeft, Plus, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { createQuote } from "../actions"
-
-interface Contact {
-  id: string
-  first_name: string
-  last_name: string
-  company: string | null
-}
+import CustomerSelect from "@/components/customer-select"
 
 interface LineItem {
   description: string
@@ -19,18 +13,11 @@ interface LineItem {
 }
 
 export default function NewQuotePage() {
-  const [contacts, setContacts] = useState<Contact[]>([])
+  const [contactId, setContactId] = useState("")
   const [items, setItems] = useState<LineItem[]>([
     { description: "", quantity: 1, unit_price: 0 },
   ])
   const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    fetch("/api/contacts")
-      .then((res) => res.json())
-      .then((data) => setContacts(data.contacts ?? []))
-      .catch(() => {})
-  }, [])
 
   useEffect(() => {
     const defaultDate = new Date()
@@ -110,26 +97,12 @@ export default function NewQuotePage() {
         <div className="rounded-lg border border-border bg-card shadow-sm p-6 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <label
-                htmlFor="contact_id"
-                className="text-sm font-medium leading-none"
-              >
-                Contact
-              </label>
-              <select
-                id="contact_id"
+              <CustomerSelect
                 name="contact_id"
+                value={contactId}
+                onChange={setContactId}
                 required
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="">Select a contact</option>
-                {contacts.map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.first_name} {contact.last_name}
-                    {contact.company ? ` (${contact.company})` : ""}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div className="space-y-2">

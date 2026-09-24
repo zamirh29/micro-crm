@@ -39,9 +39,9 @@ export default async function ContactsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Contacts</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
           <p className="text-sm text-muted-foreground">
-            Manage your contacts and their information.
+            Manage your customers and their information.
           </p>
         </div>
         <Link
@@ -49,7 +49,7 @@ export default async function ContactsPage() {
           className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" />
-          Add Contact
+          Add Customer
         </Link>
       </div>
 
@@ -122,7 +122,7 @@ export default async function ContactsPage() {
                     colSpan={5}
                     className="px-4 py-8 text-center text-muted-foreground"
                   >
-                    No contacts yet. Add your first contact to get started.
+                    No customers yet. Add your first customer to get started.
                   </td>
                 </tr>
               )}

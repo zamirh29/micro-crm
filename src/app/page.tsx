@@ -6,7 +6,7 @@ import { formatCurrency } from "@/lib/utils"
 const features = [
   {
     icon: Users,
-    title: "Leads & Contacts",
+    title: "Leads & Customers",
     description:
       "Track every lead, prospect, and client in one simple place. Add notes and stay organized.",
   },
