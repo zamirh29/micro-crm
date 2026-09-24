@@ -46,11 +46,11 @@ export async function createInvoice(formData: FormData) {
     .limit(1)
     .single()
 
-  let nextSequence = 1
+  let nextSequence = 100000
   if (maxInvoice?.number) {
     const match = maxInvoice.number.match(/INV-(\d+)/)
     if (match) {
-      nextSequence = parseInt(match[1], 10) + 1
+      nextSequence = Math.max(100000, parseInt(match[1], 10) + 1)
     }
   }
 
