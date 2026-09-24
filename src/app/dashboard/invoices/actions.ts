@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/resend"
 import { invoiceEmail } from "@/components/email/invoice-email"
 import { generateInvoiceNumber, formatDate } from "@/lib/utils"
+import { assertDocumentCreationAllowed } from "@/lib/limits"
 import type { InvoiceStatus } from "@/types/database"
 
 interface LineItem {
@@ -27,6 +28,13 @@ export async function createInvoice(formData: FormData) {
     .eq("user_id", user.id)
     .single()
   if (!membership) redirect("/login")
+
+  await assertDocumentCreationAllowed({
+    supabase,
+    userId: user.id,
+    orgId: membership.org_id,
+    type: "invoice",
+  })
 
   const contact_id = formData.get("contact_id") as string
   const title = formData.get("title") as string

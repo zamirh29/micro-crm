@@ -53,7 +53,7 @@ export async function createCheckoutSession() {
     ],
     subscription_data: hasPastSubscription
       ? undefined
-      : { trial_period_days: 30 },
+      : { trial_period_days: 90 },
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=true`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=true`,
     metadata: { user_id: user.id },

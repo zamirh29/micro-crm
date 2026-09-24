@@ -18,6 +18,7 @@ export default function NewQuotePage() {
     { description: "", quantity: 1, unit_price: 0 },
   ])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const defaultDate = new Date()
@@ -62,6 +63,7 @@ export default function NewQuotePage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
+    setError(null)
 
     const form = e.currentTarget
     const formData = new FormData(form)
@@ -70,7 +72,8 @@ export default function NewQuotePage() {
 
     try {
       await createQuote(formData)
-    } catch {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong")
       setLoading(false)
     }
   }
@@ -94,6 +97,12 @@ export default function NewQuotePage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
         <div className="rounded-lg border border-border bg-card shadow-sm p-6 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">

@@ -35,7 +35,7 @@ export default function PricingPage() {
               Pricing
             </h1>
             <p className="mt-4 text-lg text-muted-foreground">
-              Start free — 1 month on us. Cancel anytime.
+              Start free — 90 days on us. Cancel anytime.
             </p>
           </div>
 

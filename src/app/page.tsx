@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Check, Users, FileText, Receipt, Bell } from "lucide-react"
+import { Check, Users, FileText, Receipt, Bell, Landmark } from "lucide-react"
 import { PLANS } from "@/lib/stripe"
 import { formatCurrency } from "@/lib/utils"
 
@@ -21,6 +21,12 @@ const features = [
     title: "Invoices",
     description:
       "Generate invoices from quotes or from scratch. Get paid faster with clean, professional PDFs.",
+  },
+  {
+    icon: Landmark,
+    title: "UK Tax Reports",
+    description:
+      "See your estimated income tax and find out when HMRC's Making Tax Digital will apply to you. On Pro.",
   },
   {
     icon: Bell,
@@ -78,7 +84,7 @@ export default function LandingPage() {
             </Link>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            1 month free on any plan. Cancel anytime.
+            90 days free on the Free plan. First 3 months of Pro on us. Cancel anytime.
           </p>
         </section>
 

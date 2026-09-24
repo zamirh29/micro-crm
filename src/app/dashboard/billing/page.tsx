@@ -68,7 +68,7 @@ export default function BillingPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Billing</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage your subscription and billing. First month free on Pro.
+          Manage your subscription and billing. First 3 months free on Pro.
         </p>
       </div>
 

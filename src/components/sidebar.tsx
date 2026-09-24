@@ -10,6 +10,7 @@ import {
   Bell,
   Settings,
   LogOut,
+  Landmark,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { signOut } from "@/app/dashboard/actions"
@@ -21,6 +22,7 @@ const navItems = [
   { label: "Invoices", href: "/dashboard/invoices", icon: Receipt },
   { label: "Reminders", href: "/dashboard/reminders", icon: Bell },
     { label: "Billing", href: "/dashboard/billing", icon: Settings },
+    { label: "Tax Report", href: "/dashboard/tax", icon: Landmark },
 ]
 
 export default function Sidebar() {

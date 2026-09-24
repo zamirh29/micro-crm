@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/resend"
 import { quoteEmail } from "@/components/email/quote-email"
 import { generateQuoteNumber, formatDate } from "@/lib/utils"
+import { assertDocumentCreationAllowed } from "@/lib/limits"
 import type { QuoteStatus } from "@/types/database"
 
 interface LineItem {
@@ -27,6 +28,13 @@ export async function createQuote(formData: FormData) {
     .eq("user_id", user.id)
     .single()
   if (!membership) redirect("/login")
+
+  await assertDocumentCreationAllowed({
+    supabase,
+    userId: user.id,
+    orgId: membership.org_id,
+    type: "quote",
+  })
 
   const contact_id = formData.get("contact_id") as string
   const title = formData.get("title") as string
@@ -234,6 +242,13 @@ export async function convertToInvoice(id: string) {
     .single()
 
   if (!quote) throw new Error("Quote not found")
+
+  await assertDocumentCreationAllowed({
+    supabase,
+    userId: user.id,
+    orgId: quote.org_id,
+    type: "invoice",
+  })
 
   const { data: maxInvoice } = await supabase
     .from("invoices")
