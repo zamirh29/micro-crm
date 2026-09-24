@@ -29,6 +29,7 @@ export const PLANS = {
       "UK tax reports & MTD tracking",
       "Custom branding",
       "Email templates",
+      "Automated report emails",
       "Priority support",
     ],
   },

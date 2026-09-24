@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getCompanyProfile } from "@/lib/company"
 import { formatCurrency } from "@/lib/utils"
 import { monthBand, previousMonth } from "@/lib/report-dates"
-import { computeCustomerSales, type CustomerBrief } from "@/lib/sales-report"
+import { runSalesReport } from "@/lib/report-runner"
 import ProGate from "@/components/pro-gate"
 import ReportFilters from "@/components/report-filters"
 import ExportCsvButton from "@/components/export-csv-button"
@@ -61,25 +61,14 @@ export default async function MonthEndReportPage({
   const band = monthBand(selectedMonth) ?? monthBand(previousMonth())!
   const customerId = params.customer || null
 
-  const [{ data: contacts }, quotes, invoicesCreated, invoicesPaid] =
-    await Promise.all([
-      supabase
-        .from("contacts")
-        .select("id, first_name, last_name, email, company")
-        .eq("org_id", membership.org_id)
-        .order("first_name"),
-      fetchQuotes(supabase, membership.org_id, band.from!, band.to!, customerId),
-      fetchInvoicesCreated(supabase, membership.org_id, band.from!, band.to!, customerId),
-      fetchInvoicesPaid(supabase, membership.org_id, band.from!, band.to!, customerId),
-    ])
+  const summary = await runSalesReport(
+    supabase,
+    membership.org_id,
+    band,
+    customerId
+  )
 
-  const customers = (contacts ?? []) as CustomerBrief[]
-  const summary = computeCustomerSales({
-    customers,
-    quotes,
-    invoicesCreated,
-    invoicesPaid,
-  })
+  const customers = summary.customers
 
   const cards = [
     {
@@ -277,59 +266,4 @@ export default async function MonthEndReportPage({
       </div>
     </div>
   )
-}
-
-async function fetchQuotes(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  orgId: string,
-  from: Date,
-  to: Date,
-  customerId: string | null
-) {
-  let q = supabase
-    .from("quotes")
-    .select("contact_id, status, total")
-    .eq("org_id", orgId)
-    .gte("created_at", from.toISOString())
-    .lt("created_at", to.toISOString())
-  if (customerId) q = q.eq("contact_id", customerId)
-  const { data } = await q
-  return data ?? []
-}
-
-async function fetchInvoicesCreated(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  orgId: string,
-  from: Date,
-  to: Date,
-  customerId: string | null
-) {
-  let q = supabase
-    .from("invoices")
-    .select("contact_id, status, total")
-    .eq("org_id", orgId)
-    .gte("created_at", from.toISOString())
-    .lt("created_at", to.toISOString())
-  if (customerId) q = q.eq("contact_id", customerId)
-  const { data } = await q
-  return data ?? []
-}
-
-async function fetchInvoicesPaid(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  orgId: string,
-  from: Date,
-  to: Date,
-  customerId: string | null
-) {
-  let q = supabase
-    .from("invoices")
-    .select("contact_id, total")
-    .eq("org_id", orgId)
-    .eq("status", "paid")
-    .gte("paid_at", from.toISOString())
-    .lt("paid_at", to.toISOString())
-  if (customerId) q = q.eq("contact_id", customerId)
-  const { data } = await q
-  return data ?? []
 }
