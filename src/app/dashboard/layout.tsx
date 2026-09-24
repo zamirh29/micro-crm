@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { isSuperAdmin } from "@/lib/admin"
 import Sidebar from "@/components/sidebar"
 import Header from "@/components/header"
 
@@ -19,7 +20,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+      <Sidebar isSuperAdmin={isSuperAdmin(user.email)} />
       <div className="flex flex-1 flex-col overflow-hidden pl-64">
         <Header userEmail={user.email ?? ""} />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>

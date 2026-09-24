@@ -11,22 +11,36 @@ import {
   Settings,
   LogOut,
   Landmark,
+  ShieldCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { signOut } from "@/app/dashboard/actions"
 
-const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Customers", href: "/dashboard/contacts", icon: Users },
-  { label: "Quotes", href: "/dashboard/quotes", icon: FileText },
-  { label: "Invoices", href: "/dashboard/invoices", icon: Receipt },
-  { label: "Reminders", href: "/dashboard/reminders", icon: Bell },
+interface SidebarProps {
+  isSuperAdmin?: boolean
+}
+
+export default function Sidebar({ isSuperAdmin = false }: SidebarProps) {
+  const pathname = usePathname()
+
+  const navItems = [
+    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Customers", href: "/dashboard/contacts", icon: Users },
+    { label: "Quotes", href: "/dashboard/quotes", icon: FileText },
+    { label: "Invoices", href: "/dashboard/invoices", icon: Receipt },
+    { label: "Reminders", href: "/dashboard/reminders", icon: Bell },
     { label: "Billing", href: "/dashboard/billing", icon: Settings },
     { label: "Tax Report", href: "/dashboard/tax", icon: Landmark },
-]
-
-export default function Sidebar() {
-  const pathname = usePathname()
+    ...(isSuperAdmin
+      ? [
+          {
+            label: "Admin",
+            href: "/dashboard/admin",
+            icon: ShieldCheck,
+          },
+        ]
+      : []),
+  ]
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
