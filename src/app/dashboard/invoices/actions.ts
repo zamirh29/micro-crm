@@ -48,6 +48,9 @@ export async function createInvoice(formData: FormData) {
   const itemsRaw = formData.get("items") as string
   const items: LineItem[] = JSON.parse(itemsRaw)
 
+  if (!contact_id) throw new Error("Please select a customer")
+  if (!title?.trim()) throw new Error("Please enter a title")
+
   const { data: maxInvoice } = await supabase
     .from("invoices")
     .select("number")

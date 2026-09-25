@@ -18,6 +18,16 @@ interface CustomerSelectProps {
   label?: string
 }
 
+function customerLabel(customer: Customer): string {
+  const name =
+    customer.last_name && customer.last_name !== customer.first_name
+      ? `${customer.first_name} ${customer.last_name}`
+      : customer.first_name
+  return customer.company && customer.company !== name
+    ? `${name} (${customer.company})`
+    : name
+}
+
 export default function CustomerSelect({
   value,
   onChange,
@@ -30,6 +40,7 @@ export default function CustomerSelect({
   const [showNew, setShowNew] = useState(false)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [createdName, setCreatedName] = useState<string | null>(null)
   const [newCustomer, setNewCustomer] = useState({
     first_name: "",
     last_name: "",
@@ -48,8 +59,10 @@ export default function CustomerSelect({
 
   async function handleCreateCustomer(e: React.FormEvent) {
     e.preventDefault()
+    e.stopPropagation()
     setCreating(true)
     setError(null)
+    setCreatedName(null)
 
     try {
       const res = await fetch("/api/contacts", {
@@ -63,6 +76,10 @@ export default function CustomerSelect({
       setCustomers((prev) => [...prev, data.contact])
       onChange(data.contact.id)
       setShowNew(false)
+      setCreatedName(
+        `${data.contact.first_name} ${data.contact.last_name}`.trim()
+      )
+      setTimeout(() => setCreatedName(null), 5000)
       setNewCustomer({
         first_name: "",
         last_name: "",
@@ -98,11 +115,16 @@ export default function CustomerSelect({
         </option>
         {customers.map((customer) => (
           <option key={customer.id} value={customer.id}>
-            {customer.first_name} {customer.last_name}
-            {customer.company ? ` (${customer.company})` : ""}
+            {customerLabel(customer)}
           </option>
         ))}
       </select>
+
+      {createdName && (
+        <div className="rounded-md bg-emerald-500/10 p-2 text-sm font-medium text-emerald-600">
+          Customer added: {createdName} — now selected
+        </div>
+      )}
 
       {!showNew ? (
         <button
@@ -148,8 +170,7 @@ export default function CustomerSelect({
             />
             <input
               type="text"
-              required
-              placeholder="Last name"
+              placeholder="Last name (optional)"
               value={newCustomer.last_name}
               onChange={(e) =>
                 setNewCustomer({ ...newCustomer, last_name: e.target.value })
