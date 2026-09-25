@@ -3,17 +3,41 @@
 import { useState } from "react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
+import { accountExists } from "./actions"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [notFound, setNotFound] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+
+  function handleEmailChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setEmail(e.target.value)
+    setError(null)
+    setNotFound(false)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setNotFound(false)
+
+    const check = await accountExists(email)
+
+    if (check.status === "not_found") {
+      setNotFound(true)
+      setLoading(false)
+      return
+    }
+
+    if (check.status === "error") {
+      setError(check.message)
+      setLoading(false)
+      return
+    }
+
     const supabase = createClient()
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -63,7 +87,25 @@ export default function ForgotPasswordPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
+        {notFound && (
+          <div className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+            <p className="font-medium">
+              We could not find an account for this email.
+            </p>
+            <p className="mt-1">
+              Check the address and try again, or{" "}
+              <Link
+                href="/signup"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                create an account
+              </Link>
+              .
+            </p>
+          </div>
+        )}
+
+        {error && !notFound && (
           <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
             {error}
           </div>
@@ -81,7 +123,7 @@ export default function ForgotPasswordPage() {
             type="email"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={handleEmailChange}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             placeholder="you@example.com"
           />
