@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { createCheckoutSession, createPortalSession } from "./actions"
 import { Check, Loader2 } from "lucide-react"
-import { PLANS } from "@/lib/stripe"
+import { PLANS } from "@/lib/plans"
 import { formatCurrency } from "@/lib/utils"
 
 type PlanKey = "free" | "pro"
@@ -13,25 +13,28 @@ export default function BillingPage() {
   const [currentPlan, setCurrentPlan] = useState<PlanKey | null>(null)
   const [loading, setLoading] = useState(false)
 
-  useState(() => {
-    const query = new URLSearchParams(window.location.search)
-    if (query.get("success") === "true") {
-      setCurrentPlan("pro")
-    } else {
-      const supabase = createClient()
-      supabase
-        .from("subscriptions")
-        .select("status, plan")
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data?.status === "active" || data?.status === "trialing") {
-            setCurrentPlan((data.plan as PlanKey) || "free")
-          } else {
-            setCurrentPlan("free")
-          }
-        })
-    }
-  })
+  useEffect(() => {
+    const isSuccess =
+      new URLSearchParams(window.location.search).get("success") === "true"
+    const supabase = createClient()
+    const query = isSuccess
+      ? Promise.resolve({ data: { status: "active", plan: "pro" }, error: null })
+      : Promise.resolve(
+          supabase.from("subscriptions").select("status, plan").maybeSingle()
+        )
+    query
+      .then(({ data }) => {
+        if (data?.status === "active" || data?.status === "trialing") {
+          setCurrentPlan((data.plan as PlanKey) || "free")
+        } else {
+          setCurrentPlan("free")
+        }
+      })
+      .catch(() => {
+        setCurrentPlan("free")
+      })
+  }, [])
+
 
   if (currentPlan === null) {
     return (

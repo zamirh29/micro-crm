@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Check } from "lucide-react"
-import { PLANS } from "@/lib/stripe"
+import { PLANS } from "@/lib/plans"
 import { formatCurrency } from "@/lib/utils"
 
 export default function PricingPage() {

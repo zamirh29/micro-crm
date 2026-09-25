@@ -1,0 +1,29 @@
+export const PLANS = {
+  free: {
+    name: "Free",
+    price: 0,
+    description: "Free for your first 90 days — no card required.",
+    features: [
+      "Up to 50 customers",
+      "20 quotes per month",
+      "20 invoices per month",
+      "Basic reminders",
+    ],
+  },
+  pro: {
+    name: "Pro",
+    price: 800,
+    description: "Unlimited everything for growing sole traders.",
+    features: [
+      "Unlimited leads & invoices",
+      "Unlimited quotes",
+      "Automated reminders",
+      "UK tax reports & MTD tracking",
+      "Custom branding",
+      "Email templates",
+      "Automated report emails",
+      "10-day activity log & restore",
+      "Priority support",
+    ],
+  },
+} as const
