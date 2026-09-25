@@ -1,93 +1,50 @@
-import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+import { z } from "zod"
+import { requireApiUser } from "@/lib/api-auth"
+import { jsonError, readJson, errorFromThrown } from "@/lib/api-utils"
+import { createContactRecord } from "@/lib/documents"
 
-export async function POST(request: Request) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+const createSchema = z.object({
+  first_name: z.string().trim().min(1, "First name is required"),
+  last_name: z.string().nullish(),
+  email: z.string().nullish(),
+  phone: z.string().nullish(),
+  company: z.string().nullish(),
+  status: z.enum(["lead", "prospect", "client", "inactive"]).nullish(),
+  notes: z.string().nullish(),
+})
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+export async function GET(request: Request) {
+  const auth = await requireApiUser(request)
+  if (!auth.ok) return auth.response
 
-  const { data: membership } = await supabase
-    .from("memberships")
-    .select("org_id")
-    .eq("user_id", user.id)
-    .limit(1)
-    .single()
-
-  if (!membership) {
-    return NextResponse.json({ error: "No organization found" }, { status: 400 })
-  }
-
-  let body: {
-    first_name?: string
-    last_name?: string
-    email?: string
-    phone?: string
-    company?: string
-  }
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
-  }
-
-  const first_name = (body.first_name ?? "").trim()
-  const last_name = (body.last_name ?? "").trim()
-
-  if (!first_name) {
-    return NextResponse.json({ error: "First name is required" }, { status: 400 })
-  }
-
-  const { data: contact, error } = await supabase
+  const { data: contacts, error } = await auth.supabase
     .from("contacts")
-    .insert({
-      org_id: membership.org_id,
-      first_name,
-      last_name,
-      email: (body.email ?? "").trim() || null,
-      phone: (body.phone ?? "").trim() || null,
-      company: (body.company ?? "").trim() || null,
-    })
-    .select("id, first_name, last_name, company")
-    .single()
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 })
-  }
-
-  return NextResponse.json({ contact })
-}
-
-export async function GET() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
-  const { data: membership } = await supabase
-    .from("memberships")
-    .select("org_id")
-    .eq("user_id", user.id)
-    .limit(1)
-    .single()
-
-  if (!membership) {
-    return NextResponse.json({ contacts: [] })
-  }
-
-  const { data: contacts } = await supabase
-    .from("contacts")
-    .select("id, first_name, last_name, company")
-    .eq("org_id", membership.org_id)
+    .select("*")
+    .eq("org_id", auth.orgId)
     .order("first_name")
+    .limit(500)
+
+  if (error) return jsonError(error.message, 400)
 
   return NextResponse.json({ contacts: contacts ?? [] })
+}
+
+export async function POST(request: Request) {
+  const auth = await requireApiUser(request)
+  if (!auth.ok) return auth.response
+
+  const parsed = await readJson(request, createSchema)
+  if (!parsed.ok) return parsed.response
+
+  try {
+    const contact = await createContactRecord(auth.supabase, {
+      orgId: auth.orgId,
+      userId: auth.user.id,
+      input: { ...parsed.data, status: parsed.data.status ?? undefined },
+    })
+    return NextResponse.json({ contact }, { status: 201 })
+  } catch (err) {
+    return errorFromThrown(err)
+  }
 }

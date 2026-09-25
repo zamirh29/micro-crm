@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { getDashboardData } from "@/lib/dashboard-data"
 import { cn } from "@/lib/utils"
 import { Users, FileText, Receipt, Bell } from "lucide-react"
 
@@ -25,120 +26,38 @@ export default async function DashboardPage() {
 
   const orgId = membership.org_id
 
-  const [contactsResult, quotesResult, invoicesResult, remindersResult] =
-    await Promise.all([
-      supabase
-        .from("contacts")
-        .select("id", { count: "exact", head: true })
-        .eq("org_id", orgId),
-      supabase
-        .from("quotes")
-        .select("id", { count: "exact", head: true })
-        .eq("org_id", orgId)
-        .eq("status", "sent"),
-      supabase
-        .from("invoices")
-        .select("id", { count: "exact", head: true })
-        .eq("org_id", orgId)
-        .in("status", ["sent", "overdue"]),
-      supabase
-        .from("reminders")
-        .select("id", { count: "exact", head: true })
-        .eq("org_id", orgId)
-        .eq("status", "pending"),
-    ])
-
-  const { data: recentContacts } = await supabase
-    .from("contacts")
-    .select("id, first_name, last_name, created_at")
-    .eq("org_id", orgId)
-    .order("created_at", { ascending: false })
-    .limit(5)
-
-  const { data: recentQuotes } = await supabase
-    .from("quotes")
-    .select("id, number, title, status, created_at")
-    .eq("org_id", orgId)
-    .order("created_at", { ascending: false })
-    .limit(5)
-
-  const { data: recentInvoices } = await supabase
-    .from("invoices")
-    .select("id, number, title, status, created_at")
-    .eq("org_id", orgId)
-    .order("created_at", { ascending: false })
-    .limit(5)
+  const { counts, activities } = await getDashboardData(supabase, orgId)
 
   const stats = [
     {
       label: "Total Customers",
-      value: contactsResult.count ?? 0,
+      value: counts.customers,
       icon: Users,
       color: "text-blue-600 dark:text-blue-400",
       bg: "bg-blue-50 dark:bg-blue-950",
     },
     {
       label: "Active Quotes",
-      value: quotesResult.count ?? 0,
+      value: counts.activeQuotes,
       icon: FileText,
       color: "text-amber-600 dark:text-amber-400",
       bg: "bg-amber-50 dark:bg-amber-950",
     },
     {
       label: "Outstanding Invoices",
-      value: invoicesResult.count ?? 0,
+      value: counts.outstandingInvoices,
       icon: Receipt,
       color: "text-red-600 dark:text-red-400",
       bg: "bg-red-50 dark:bg-red-950",
     },
     {
       label: "Upcoming Reminders",
-      value: remindersResult.count ?? 0,
+      value: counts.pendingReminders,
       icon: Bell,
       color: "text-purple-600 dark:text-purple-400",
       bg: "bg-purple-50 dark:bg-purple-950",
     },
   ]
-
-  interface ActivityItem {
-    id: string
-    type: "contact" | "quote" | "invoice"
-    title: string
-    subtitle: string
-    status?: string
-    created_at: string
-  }
-
-  const activities: ActivityItem[] = [
-    ...(recentContacts ?? []).map((c) => ({
-      id: c.id,
-      type: "contact" as const,
-      title: `${c.first_name} ${c.last_name}`,
-      subtitle: "New customer",
-      created_at: c.created_at,
-    })),
-    ...(recentQuotes ?? []).map((q) => ({
-      id: q.id,
-      type: "quote" as const,
-      title: `${q.number} — ${q.title}`,
-      subtitle: "Quote",
-      status: q.status,
-      created_at: q.created_at,
-    })),
-    ...(recentInvoices ?? []).map((i) => ({
-      id: i.id,
-      type: "invoice" as const,
-      title: `${i.number} — ${i.title}`,
-      subtitle: "Invoice",
-      status: i.status,
-      created_at: i.created_at,
-    })),
-  ]
-    .sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    )
-    .slice(0, 10)
 
   const typeIcons: Record<string, typeof Users> = {
     contact: Users,

@@ -1,5 +1,5 @@
 import { renderToBuffer } from "@react-pdf/renderer"
-import { createClient } from "@/lib/supabase/server"
+import { requireApiUser } from "@/lib/api-auth"
 import { getCompanyProfile } from "@/lib/company"
 import QuoteDocument from "@/components/pdf/quote-document"
 import type { Quote, QuoteItem, Contact } from "@/types/database"
@@ -7,24 +7,21 @@ import type { Quote, QuoteItem, Contact } from "@/types/database"
 export const runtime = "nodejs"
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const auth = await requireApiUser(req)
+  if (!auth.ok) return auth.response
 
-  if (!user) {
-    return new Response("Unauthorized", { status: 401 })
-  }
+  const supabase = auth.supabase
 
   const { data: quote } = await supabase
     .from("quotes")
     .select("*, contacts(*), quote_items(*)")
     .eq("id", id)
-    .single()
+    .eq("org_id", auth.orgId)
+    .maybeSingle()
 
   if (!quote) {
     return new Response("Not found", { status: 404 })

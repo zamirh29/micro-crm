@@ -6,6 +6,8 @@ export const FREE_INVOICES_PER_MONTH = 20
 
 export type DocType = "quote" | "invoice"
 
+export class PlanLimitError extends Error {}
+
 export async function assertDocumentCreationAllowed(opts: {
   supabase: SupabaseClient
   userId: string
@@ -40,7 +42,7 @@ export async function assertDocumentCreationAllowed(opts: {
     trialStart.getTime() + FREE_TRIAL_DAYS * 24 * 60 * 60 * 1000
   )
   if (Date.now() > trialEnd.getTime()) {
-    throw new Error(
+    throw new PlanLimitError(
       "Your 90-day free trial has ended. Upgrade to Pro to continue creating quotes and invoices."
     )
   }
@@ -62,7 +64,7 @@ export async function assertDocumentCreationAllowed(opts: {
 
   if ((count ?? 0) >= limit) {
     const label = type === "quote" ? "quotes" : "invoices"
-    throw new Error(
+    throw new PlanLimitError(
       `You've reached the free limit of ${limit} ${label} per month. Upgrade to Pro for unlimited ${label}.`
     )
   }

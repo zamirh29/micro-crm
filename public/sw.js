@@ -1,5 +1,5 @@
 /* MicroCRM service worker — offline read support */
-const VERSION = "v1";
+const VERSION = "v2";
 const PAGES = `microcrm-pages-${VERSION}`;
 const STATIC = `microcrm-static-${VERSION}`;
 const API = `microcrm-api-${VERSION}`;
@@ -58,7 +58,7 @@ async function networkFirst(request, cacheName, timeoutMs, fallback) {
       const isRedirectedToLogin =
         res.redirected && new URL(res.url).pathname.startsWith("/login");
       if (res.ok && !isRedirectedToLogin) {
-        cache.put(request, res.clone());
+        Promise.resolve(cache.put(request, res.clone())).catch(() => {});
       }
       return res;
     });
@@ -87,6 +87,7 @@ async function cacheFirst(request, cacheName) {
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
+  if (request.signal && request.signal.aborted) return;
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
@@ -102,13 +103,16 @@ self.addEventListener("fetch", (event) => {
 
   if (isNavigation) {
     event.respondWith(
-      networkFirst(request, PAGES, 4000, async () => {
-        const offline = await caches.match(OFFLINE_URL);
-        if (offline) return offline;
-        return new Response("Offline", {
-          status: 503,
-          headers: { "Content-Type": "text/plain" },
-        });
+      networkFirst(request, PAGES, 8000, async () => {
+        if (request.mode === "navigate") {
+          const offline = await caches.match(OFFLINE_URL);
+          if (offline) return offline;
+          return new Response("Offline", {
+            status: 503,
+            headers: { "Content-Type": "text/plain" },
+          });
+        }
+        return Response.error();
       })
     );
     return;
