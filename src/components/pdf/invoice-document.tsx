@@ -34,11 +34,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 4,
   },
-  companyDetail: {
-    fontSize: 9,
-    color: "#666666",
-    lineHeight: 1.4,
-  },
   invoiceSection: {
     alignItems: "flex-end",
   },
@@ -177,9 +172,12 @@ const styles = StyleSheet.create({
     bottom: 30,
     left: 40,
     right: 40,
+  },
+  footerLine: {
     textAlign: "center",
     fontSize: 8,
     color: "#999999",
+    lineHeight: 1.5,
   },
 })
 
@@ -240,18 +238,6 @@ export default function InvoiceDocument({
               <Image src={companyLogo} style={styles.logoImage} />
             )}
             <Text style={styles.companyName}>{companyName}</Text>
-            {companyAddress && (
-              <Text style={styles.companyDetail}>{companyAddress}</Text>
-            )}
-            {companyPhone && (
-              <Text style={styles.companyDetail}>{companyPhone}</Text>
-            )}
-            {companyEmail && (
-              <Text style={styles.companyDetail}>{companyEmail}</Text>
-            )}
-            {companyWebsite && (
-              <Text style={styles.companyDetail}>{companyWebsite}</Text>
-            )}
           </View>
           <View style={styles.invoiceSection}>
             <Text style={styles.invoiceLabel}>INVOICE</Text>
@@ -365,9 +351,23 @@ export default function InvoiceDocument({
           </View>
         )}
 
-        <Text style={styles.footer}>
-          Thank you for your business
-        </Text>
+        <View style={styles.footer}>
+          {companyAddress && (
+            <Text style={styles.footerLine}>{companyAddress}</Text>
+          )}
+          {companyPhone && (
+            <Text style={styles.footerLine}>Tel: {companyPhone}</Text>
+          )}
+          {companyEmail && (
+            <Text style={styles.footerLine}>Email: {companyEmail}</Text>
+          )}
+          {companyWebsite && (
+            <Text style={styles.footerLine}>Web: {companyWebsite}</Text>
+          )}
+          <Text style={styles.footerLine}>
+            Thank you for your business
+          </Text>
+        </View>
       </Page>
     </Document>
   )
