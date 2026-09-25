@@ -67,6 +67,10 @@ export default function QuoteForm({ defaultCurrency }: QuoteFormProps) {
     const updated = [...items]
     if (field === "description") {
       updated[index].description = value as string
+    } else if (field === "unit_price") {
+      updated[index].unit_price = Math.round(
+        (parseFloat(value as string) || 0) * 100
+      )
     } else {
       updated[index][field] = Number(value) || 0
     }
@@ -242,16 +246,17 @@ export default function QuoteForm({ defaultCurrency }: QuoteFormProps) {
                   required
                   className="flex h-10 w-20 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
-                <input
+<input
                   type="number"
-                  placeholder="Unit Price (p)"
+                  placeholder="Unit Price"
                   min="0"
-                  value={item.unit_price || ""}
+                  step="0.01"
+                  value={item.unit_price ? item.unit_price / 100 : ""}
                   onChange={(e) =>
                     updateItem(index, "unit_price", e.target.value)
                   }
                   required
-                  className="flex h-10 w-32 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex h-10 w-32 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
                 <div className="flex h-10 items-center justify-end text-sm font-medium w-28">
                   {formatAmount(item.quantity * item.unit_price)}

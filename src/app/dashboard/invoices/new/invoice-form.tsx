@@ -265,7 +265,7 @@ export default function InvoiceForm({ defaultCurrency }: InvoiceFormProps) {
                         min="0"
                         step="0.01"
                         required
-                        value={formatPence(item.unit_price, symbol)}
+                        value={item.unit_price ? item.unit_price / 100 : ""}
                         onChange={(e) =>
                           updateItem(index, "unit_price", e.target.value)
                         }
