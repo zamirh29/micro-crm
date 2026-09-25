@@ -57,9 +57,16 @@ export default function CustomerSelect({
       .finally(() => setLoading(false))
   }, [])
 
-  async function handleCreateCustomer(e: React.FormEvent) {
-    e.preventDefault()
-    e.stopPropagation()
+  async function handleCreateCustomer(e?: React.SyntheticEvent) {
+    e?.preventDefault()
+    e?.stopPropagation()
+
+    const firstName = newCustomer.first_name.trim()
+    if (!firstName) {
+      setError("First name is required")
+      return
+    }
+
     setCreating(true)
     setError(null)
     setCreatedName(null)
@@ -68,7 +75,7 @@ export default function CustomerSelect({
       const res = await fetch("/api/contacts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newCustomer),
+        body: JSON.stringify({ ...newCustomer, first_name: firstName }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? "Failed to create customer")
@@ -136,9 +143,17 @@ export default function CustomerSelect({
           New Customer
         </button>
       ) : (
-        <form
-          onSubmit={handleCreateCustomer}
+        <div
           className="space-y-3 rounded-md border border-border bg-card p-4"
+          onKeyDown={(e) => {
+            if (
+              e.key === "Enter" &&
+              (e.target as HTMLElement).tagName === "INPUT"
+            ) {
+              e.preventDefault()
+              void handleCreateCustomer()
+            }
+          }}
         >
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold">New Customer</span>
@@ -160,7 +175,6 @@ export default function CustomerSelect({
           <div className="grid gap-3 sm:grid-cols-2">
             <input
               type="text"
-              required
               placeholder="First name"
               value={newCustomer.first_name}
               onChange={(e) =>
@@ -208,15 +222,16 @@ export default function CustomerSelect({
 
           <div className="flex justify-end">
             <button
-              type="submit"
+              type="button"
               disabled={creating}
+              onClick={() => void handleCreateCustomer()}
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
             >
               {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {creating ? "Creating..." : "Create Customer"}
             </button>
           </div>
-        </form>
+        </div>
       )}
     </div>
   )
