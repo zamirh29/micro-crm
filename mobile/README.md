@@ -62,6 +62,32 @@ src/components/      Shared UI (status chips, screen states, offline banner)
 src/lib/             Supabase client, REST client, auth, formatting, PDF sharing
 ```
 
+## Build & ship
+
+Builds run in the cloud with [EAS](https://docs.expo.dev/eas/index.md), so no
+Android Studio or Xcode is needed.
+
+```bash
+npx eas-cli@latest login                # free Expo account
+npx eas-cli@latest build -p android --profile preview
+```
+
+- `preview` (see `eas.json`) produces a signed release **APK** — an installable
+  file, no app store required.
+- The command prints a build URL/QR code; download the `.apk` from that page when
+  it finishes (a first build takes roughly 10–20 minutes).
+- On the phone, open the downloaded file and allow installs from that source when
+  asked (Settings → Install unknown apps → your browser/file manager).
+
+`--profile production` produces an `.aab` for Google Play instead.
+
+**iOS** needs a paid Apple Developer account: `npx eas-cli@latest build -p ios`,
+then distribute through TestFlight — iOS cannot be sideloaded without a
+certificate.
+
+To ship JavaScript-only fixes to an installed build without rebuilding, use
+`npx eas-cli@latest update`.
+
 ## Behaviour notes
 
 - Sessions come from Supabase; the access token is sent as a `Bearer` token to `/api/*`.

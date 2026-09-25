@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MicroCRM
 
-## Getting Started
+Micro-business CRM for sole traders: customers, quotes, invoices, payment
+reminders, reports and PDF export, with a free plan and a Pro tier.
 
-First, run the development server:
+**Production:** https://crm.dtmstechsolutions.co.uk
+
+Built with Next.js (App Router), Supabase (Postgres + Auth), Stripe, Resend and
+Tailwind CSS. A native iOS/Android client lives in [`mobile/`](./mobile).
+
+## Local development
 
 ```bash
+cp .env.example .env.local   # then fill in your keys
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. See [`.env.example`](./.env.example) for every
+variable the app reads (Supabase, Stripe, Resend, `NEXT_PUBLIC_APP_URL`,
+`CRON_SECRET`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Checks
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npx tsc --noEmit                      # typecheck
+npx eslint . --ext .ts,.tsx           # lint
+npm run build                         # production build
+```
 
-## Learn More
+## Deploy
 
-To learn more about Next.js, take a look at the following resources:
+Push to `main` — Vercel builds and deploys. `vercel.json` defines the two cron
+jobs (daily invoice reminders at 09:00, weekly report emails at 18:00), both
+authenticated with `CRON_SECRET`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Database migrations are plain SQL in `supabase/migrations/` (001–006 applied).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Install as an app (PWA)
 
-## Deploy on Vercel
+The site is a [progressive web app](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps):
+installable, launches in its own window without browser chrome, and keeps
+working offline for previously visited screens.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Android (Chrome / Samsung Internet)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Open https://crm.dtmstechsolutions.co.uk
+2. Tap the **⋮** menu → **Add to Home screen** / **Install app**
+3. Confirm — a MicroCRM icon appears on your home screen
+
+### iPhone / iPad (Safari)
+
+1. Open https://crm.dtmstechsolutions.co.uk
+2. Tap the **Share** button (square with an arrow)
+3. Scroll down and tap **Add to Home Screen** → **Add**
+
+### Computer (Chrome / Edge / Brave)
+
+1. Open https://crm.dtmstechsolutions.co.uk
+2. Click the **install** icon at the right of the address bar (or **⋮** →
+   **Install MicroCRM**)
+3. The app opens in a standalone window
+
+> iOS does not show the install option if the page is open in the in-app
+> browser of another app — open Safari itself first.
+
+### Offline behaviour (airplane mode)
+
+- Pages you have already opened open instantly from the cache.
+- Dashboard and report data are served from cache and shown normally.
+- Anything you have not visited yet falls back to the offline screen.
+- **Creating or editing records requires a connection** — mutations are never
+  cached or queued, they fail with a clear offline message until you are back
+  online.
+
+## Mobile app
+
+The native client (Expo SDK 57) is in [`mobile/`](./mobile/README.md).
+
+```bash
+cd mobile
+npm install
+npx expo start     # scan the QR code with Expo Go
+```
