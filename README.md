@@ -1,7 +1,7 @@
 # MicroCRM
 
 Micro-business CRM for sole traders: customers, quotes, invoices, payment
-reminders, reports and PDF export, with a free plan and a Pro tier.
+reminders, expenses, reports and PDF export, with a free plan and a Pro tier.
 
 **Production:** https://crm.dtmstechsolutions.co.uk
 
@@ -34,7 +34,7 @@ Push to `main` — Vercel builds and deploys. `vercel.json` defines the two cron
 jobs (daily invoice reminders at 09:00, weekly report emails at 18:00), both
 authenticated with `CRON_SECRET`.
 
-Database migrations are plain SQL in `supabase/migrations/` (001–006 applied).
+Database migrations are plain SQL in `supabase/migrations/` (001–007 applied).
 
 ## Install as an app (PWA)
 
