@@ -17,6 +17,7 @@ import {
   CalendarCheck,
   Mail,
   History,
+  Coins,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { signOut } from "@/app/dashboard/actions"
@@ -40,6 +41,7 @@ export default function Sidebar({
     { label: "Quotes", href: "/dashboard/quotes", icon: FileText },
     { label: "Invoices", href: "/dashboard/invoices", icon: Receipt },
     { label: "Reminders", href: "/dashboard/reminders", icon: Bell },
+    { label: "Expenses", href: "/dashboard/expenses", icon: Coins },
     { label: "Billing", href: "/dashboard/billing", icon: Settings },
     { label: "Tax Report", href: "/dashboard/tax", icon: Landmark },
     { label: "Sales Report", href: "/dashboard/reports/customers", icon: BarChart3 },

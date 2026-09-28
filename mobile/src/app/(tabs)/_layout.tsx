@@ -7,6 +7,7 @@ export default function TabsLayout() {
       screenOptions={{
         tabBarActiveTintColor: '#4f46e5',
         headerTintColor: '#4f46e5',
+        tabBarLabelStyle: { fontSize: 11 },
       }}>
       <Tabs.Screen
         name="dashboard"
@@ -36,6 +37,13 @@ export default function TabsLayout() {
         options={{
           title: 'Invoices',
           tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="costs"
+        options={{
+          title: 'Costs',
+          tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen

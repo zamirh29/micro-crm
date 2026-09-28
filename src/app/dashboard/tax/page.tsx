@@ -116,8 +116,20 @@ export default async function TaxReportPage() {
     ) ?? 0
 
   const paidPence = grossPence
+
+  const { data: expenseRows } = await supabase
+    .from("expenses")
+    .select("amount")
+    .eq("org_id", membership.org_id)
+    .gte("incurred_on", taxYear.start.toISOString().slice(0, 10))
+    .lt("incurred_on", taxYear.end.toISOString().slice(0, 10))
+
+  const expensesPence =
+    expenseRows?.reduce((sum, row) => sum + row.amount, 0) ?? 0
+
   const grossIncome = paidPence / 100
-  const tax = computeIncomeTax(grossIncome)
+  const taxableIncome = Math.max(paidPence - expensesPence, 0) / 100
+  const tax = computeIncomeTax(taxableIncome)
   const mtd = assessMtdLiability(grossIncome)
 
   return (
@@ -128,11 +140,11 @@ export default async function TaxReportPage() {
         </h1>
         <p className="text-sm text-muted-foreground">
           Estimated UK income tax and Making Tax Digital readiness based on your
-          paid invoices.
+          paid invoices, less the expenses you have recorded.
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border bg-card p-6">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-muted-foreground">
@@ -145,19 +157,44 @@ export default async function TaxReportPage() {
           <p className="mt-2 text-2xl font-bold">
             {formatCurrency(paidPence)}
           </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {formatCurrency(invoicedPence)} invoiced in total
+          </p>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-muted-foreground">
-              Invoiced ({taxYear.label})
+              Expenses ({taxYear.label})
+            </span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-950">
+              <Calculator className="h-4 w-4" />
+            </span>
+          </div>
+          <p className="mt-2 text-2xl font-bold">
+            {formatCurrency(expensesPence)}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            <Link href="/dashboard/expenses" className="underline underline-offset-2">
+              Manage expenses
+            </Link>
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card p-6">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground">
+              Taxable profit
             </span>
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950">
               <Landmark className="h-4 w-4" />
             </span>
           </div>
           <p className="mt-2 text-2xl font-bold">
-            {formatCurrency(invoicedPence)}
+            {formatCurrency(taxableIncome * 100)}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Paid income less expenses
           </p>
         </div>
 
@@ -172,7 +209,7 @@ export default async function TaxReportPage() {
           </div>
           <p className="mt-2 text-2xl font-bold">{formatPounds(tax.totalTax)}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            ~{(tax.effectiveRate * 100).toFixed(1)}% of income
+            ~{(tax.effectiveRate * 100).toFixed(1)}% of profit
           </p>
         </div>
       </div>
@@ -205,7 +242,7 @@ export default async function TaxReportPage() {
                 <tr className="border-t border-border bg-muted/50">
                   <td className="px-4 py-2.5 font-semibold">Total</td>
                   <td className="px-4 py-2.5 text-right text-muted-foreground">
-                    On {formatPounds(grossIncome)}
+                    On {formatPounds(taxableIncome)} profit
                   </td>
                   <td className="px-4 py-2.5 text-right font-semibold">
                     {formatPounds(tax.totalTax)}
@@ -215,8 +252,10 @@ export default async function TaxReportPage() {
             </table>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Estimate only. Your real liability depends on expenses, allowances,
-            and other income. Always confirm with HMRC or an accountant.
+            Estimate only — paid invoices less the expenses recorded in
+            MicroCRM. Your real liability depends on allowances, other income,
+            and what HMRC will accept. Always confirm with HMRC or an
+            accountant.
           </p>
         </div>
 
@@ -286,7 +325,7 @@ export default async function TaxReportPage() {
         </div>
       </div>
 
-      <TaxEstimator initialIncome={grossIncome} />
+      <TaxEstimator initialIncome={taxableIncome} />
     </div>
   )
 }

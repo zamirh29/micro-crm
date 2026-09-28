@@ -128,6 +128,18 @@ export interface Subscription {
   created_at: string
 }
 
+export interface Expense {
+  id: string
+  org_id: string
+  incurred_on: string
+  category: string
+  description: string | null
+  amount: number
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface Notification {
   id: string
   user_id: string
@@ -153,6 +165,7 @@ export interface Database {
       reminders: { Row: Reminder }
       subscriptions: { Row: Subscription }
       notifications: { Row: Notification }
+      expenses: { Row: Expense }
     }
   }
 }

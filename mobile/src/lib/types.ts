@@ -106,3 +106,12 @@ export interface SalesReport {
   rows: SalesRow[];
   totals: SalesRow;
 }
+
+export interface Expense {
+  id: string;
+  incurred_on: string;
+  category: string;
+  description: string | null;
+  amount: number;
+  created_at: string;
+}
