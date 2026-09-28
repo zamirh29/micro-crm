@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Standalone Expo app with its own tooling:
     "mobile/**",
+    // Node script that generates brand assets (own tooling):
+    "brand/**",
   ]),
 ]);
 

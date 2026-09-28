@@ -43,19 +43,24 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/forgot-password") ||
     request.nextUrl.pathname.startsWith("/auth")
 
+  // The reset page must stay reachable in both directions: with no session
+  // (so the `?code=` / `#access_token` in the link can be exchanged on load)
+  // and with a session (a signed-in user following an emailed reset link).
+  const isResetPage = request.nextUrl.pathname.startsWith("/reset-password")
+
   const isPublicPage =
     request.nextUrl.pathname === "/" ||
     request.nextUrl.pathname === "/offline" ||
     request.nextUrl.pathname.startsWith("/public") ||
     request.nextUrl.pathname.startsWith("/pricing")
 
-  if (!user && !isAuthPage && !isPublicPage) {
+  if (!user && !isAuthPage && !isPublicPage && !isResetPage) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"
     return NextResponse.redirect(url)
   }
 
-  if (user && isAuthPage) {
+  if (user && isAuthPage && !isResetPage) {
     const url = request.nextUrl.clone()
     url.pathname = "/dashboard"
     return NextResponse.redirect(url)
