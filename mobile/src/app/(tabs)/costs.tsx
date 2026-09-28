@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   monthLabel: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
   },
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: '#4f46e5',
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 10,
     borderRadius: 8,
   },
   addButtonActive: {
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: '#ffffff',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   totalCard: {
@@ -291,18 +291,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   totalLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6b7280',
     fontWeight: '600',
   },
   totalValue: {
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: '800',
     color: '#111827',
     marginTop: 2,
   },
   totalSub: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#9ca3af',
     marginTop: 2,
   },
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   },
   formError: {
     color: '#b91c1c',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   input: {
@@ -325,8 +325,8 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 15,
+    paddingVertical: 11,
+    fontSize: 17,
     backgroundColor: '#ffffff',
   },
   chips: {
@@ -338,8 +338,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     backgroundColor: '#ffffff',
   },
   chipActive: {
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
     borderColor: '#4f46e5',
   },
   chipText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#374151',
   },
   chipTextActive: {
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
   saveButton: {
     backgroundColor: '#4f46e5',
     borderRadius: 8,
-    paddingVertical: 11,
+    paddingVertical: 13,
     alignItems: 'center',
   },
   saveButtonDisabled: {
@@ -365,13 +365,13 @@ const styles = StyleSheet.create({
   },
   saveText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: '700',
   },
   offlineNote: {
     backgroundColor: '#fef2f2',
     color: '#b91c1c',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
     paddingVertical: 6,
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e5e7eb',
   },
@@ -395,24 +395,24 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   category: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: '600',
     color: '#111827',
     flexShrink: 1,
   },
   amount: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: '700',
     color: '#111827',
   },
   sub: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6b7280',
   },
   empty: {
     textAlign: 'center',
     color: '#9ca3af',
     paddingVertical: 32,
-    fontSize: 13,
+    fontSize: 15,
   },
 });

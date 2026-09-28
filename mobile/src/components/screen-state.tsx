@@ -49,23 +49,23 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#dc2626',
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
   },
   emptyText: {
     color: '#6b7280',
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
   },
   retry: {
     backgroundColor: '#4f46e5',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
     borderRadius: 8,
   },
   retryText: {
     color: '#ffffff',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 16,
   },
 });

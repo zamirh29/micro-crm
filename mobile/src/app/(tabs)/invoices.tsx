@@ -105,8 +105,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     backgroundColor: '#ffffff',
   },
   filterActive: {
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     borderColor: '#4f46e5',
   },
   filterText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#374151',
     textTransform: 'capitalize',
   },
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   offlineNote: {
     backgroundColor: '#fef2f2',
     color: '#b91c1c',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
     paddingVertical: 6,
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e5e7eb',
   },
@@ -144,16 +144,16 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   number: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
     color: '#111827',
   },
   sub: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6b7280',
   },
   total: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: '600',
     color: '#111827',
   },
@@ -161,6 +161,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#9ca3af',
     paddingVertical: 32,
-    fontSize: 13,
+    fontSize: 15,
   },
 });

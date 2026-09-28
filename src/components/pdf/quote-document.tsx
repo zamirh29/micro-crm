@@ -24,8 +24,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   logoImage: {
-    width: 64,
-    height: 64,
+    width: 96,
+    height: 96,
     objectFit: "contain",
     marginBottom: 8,
   },

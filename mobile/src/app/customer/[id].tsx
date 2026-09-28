@@ -268,13 +268,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   name: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '800',
     color: '#111827',
     flexShrink: 1,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: '700',
     color: '#111827',
     marginTop: 8,
@@ -282,11 +282,11 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#f9fafb',
     borderRadius: 10,
-    padding: 12,
-    gap: 8,
+    padding: 14,
+    gap: 10,
   },
   notes: {
-    fontSize: 13,
+    fontSize: 16,
     color: '#4b5563',
     lineHeight: 19,
   },
@@ -296,11 +296,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rowLabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#6b7280',
   },
   rowValue: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#111827',
     fontWeight: '500',
     flexShrink: 1,
@@ -319,21 +319,21 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   docNumber: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: '#111827',
   },
   docTitle: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6b7280',
   },
   docTotal: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: '#111827',
   },
   fieldLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#374151',
     marginBottom: 4,
@@ -343,8 +343,8 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 15,
+    paddingVertical: 11,
+    fontSize: 17,
     backgroundColor: '#ffffff',
   },
   textarea: {
@@ -360,8 +360,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     backgroundColor: '#ffffff',
   },
   statusChipActive: {
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     borderColor: '#4f46e5',
   },
   statusChipText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#374151',
     textTransform: 'capitalize',
   },
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     borderRadius: 8,
-    paddingVertical: 12,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   primaryButton: {
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   primaryText: {
     color: '#ffffff',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 16,
   },
   secondaryButton: {
     borderWidth: 1,
@@ -407,6 +407,6 @@ const styles = StyleSheet.create({
   secondaryText: {
     color: '#374151',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 16,
   },
 });

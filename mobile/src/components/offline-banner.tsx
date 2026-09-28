@@ -15,13 +15,13 @@ export function OfflineBanner() {
 const styles = StyleSheet.create({
   banner: {
     backgroundColor: '#b91c1c',
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 12,
     alignItems: 'center',
   },
   text: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
 });

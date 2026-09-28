@@ -176,22 +176,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   number: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '800',
     color: '#111827',
   },
   title: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#374151',
   },
   card: {
     backgroundColor: '#f9fafb',
     borderRadius: 10,
-    padding: 12,
-    gap: 8,
+    padding: 14,
+    gap: 10,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: '700',
     color: '#111827',
     marginTop: 8,
@@ -206,26 +206,26 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   itemDescription: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#111827',
   },
   itemMeta: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6b7280',
   },
   itemTotal: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#111827',
   },
   totals: {
     backgroundColor: '#f9fafb',
     borderRadius: 10,
-    padding: 12,
-    gap: 8,
+    padding: 14,
+    gap: 10,
   },
   notes: {
-    fontSize: 13,
+    fontSize: 16,
     color: '#4b5563',
     lineHeight: 19,
   },
@@ -235,11 +235,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rowLabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#6b7280',
   },
   rowValue: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#111827',
     fontWeight: '500',
     flexShrink: 1,
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     borderRadius: 8,
-    paddingVertical: 12,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   primaryButton: {
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   primaryText: {
     color: '#ffffff',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 16,
   },
   secondaryButton: {
     borderWidth: 1,
@@ -279,6 +279,6 @@ const styles = StyleSheet.create({
   secondaryText: {
     color: '#374151',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 16,
   },
 });

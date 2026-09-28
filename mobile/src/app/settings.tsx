@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: '#6b7280',
     textTransform: 'uppercase',
@@ -63,11 +63,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   label: {
-    fontSize: 12,
+    fontSize: 15,
     color: '#6b7280',
   },
   value: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#111827',
     fontWeight: '600',
   },
@@ -82,12 +82,12 @@ const styles = StyleSheet.create({
   signOutText: {
     color: '#dc2626',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 17,
   },
   footer: {
     textAlign: 'center',
     color: '#9ca3af',
-    fontSize: 12,
+    fontSize: 14,
     marginTop: 24,
   },
 });

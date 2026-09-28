@@ -16,27 +16,56 @@ import { useApi } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import type { DashboardData } from '@/lib/types';
 
-const COUNT_CARDS: {
+type Card = {
   key: keyof DashboardData['counts'];
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   href: Href;
-}[] = [
-  { key: 'customers', label: 'Customers', icon: 'people-outline', href: '/customers' },
-  { key: 'activeQuotes', label: 'Active quotes', icon: 'document-text-outline', href: '/quotes' },
+  tint: string;
+  color: string;
+};
+
+const COUNT_CARDS: Card[] = [
+  {
+    key: 'customers',
+    label: 'Customers',
+    icon: 'people-outline',
+    href: '/customers',
+    tint: '#eef2ff',
+    color: '#4f46e5',
+  },
+  {
+    key: 'activeQuotes',
+    label: 'Active quotes',
+    icon: 'document-text-outline',
+    href: '/quotes',
+    tint: '#fffbeb',
+    color: '#d97706',
+  },
   {
     key: 'outstandingInvoices',
     label: 'Unpaid invoices',
     icon: 'receipt-outline',
     href: '/invoices',
+    tint: '#fef2f2',
+    color: '#dc2626',
   },
   {
     key: 'pendingReminders',
     label: 'Reminders',
     icon: 'alarm-outline',
     href: { pathname: '/invoices', params: { status: 'overdue' } },
+    tint: '#f5f3ff',
+    color: '#7c3aed',
   },
 ];
+
+const COSTS_CARD = {
+  icon: 'wallet-outline' as keyof typeof Ionicons.glyphMap,
+  href: '/costs' as Href,
+  tint: '#ecfdf5',
+  color: '#059669',
+};
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
@@ -50,7 +79,7 @@ export default function DashboardScreen() {
       headerRight: () => (
         <Link href="/settings" asChild>
           <Pressable hitSlop={10} style={styles.headerButton}>
-            <Ionicons name="settings-outline" size={22} color="#4f46e5" />
+            <Ionicons name="settings-outline" size={24} color="#4f46e5" />
           </Pressable>
         </Link>
       ),
@@ -72,14 +101,46 @@ export default function DashboardScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`${card.label} count. Open ${card.label}`}
-                    style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
-                    <Ionicons name={card.icon} size={20} color="#4f46e5" />
+                    style={({ pressed }) => [
+                      styles.card,
+                      { backgroundColor: card.tint },
+                      pressed && styles.cardPressed,
+                    ]}>
+                    <View style={styles.cardTop}>
+                      <View style={[styles.iconChip, { backgroundColor: '#ffffff' }]}>
+                        <Ionicons name={card.icon} size={24} color={card.color} />
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                    </View>
                     <Text style={styles.cardValue}>{data?.counts[card.key] ?? 0}</Text>
                     <Text style={styles.cardLabel}>{card.label}</Text>
                   </Pressable>
                 </Link>
               ))}
             </View>
+
+            <View style={styles.cards}>
+              <Link href={COSTS_CARD.href} asChild>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Costs. Track what your business spends"
+                  style={({ pressed }) => [
+                    styles.wideCard,
+                    { backgroundColor: COSTS_CARD.tint },
+                    pressed && styles.cardPressed,
+                  ]}>
+                  <View style={[styles.iconChip, { backgroundColor: '#ffffff' }]}>
+                    <Ionicons name={COSTS_CARD.icon} size={24} color={COSTS_CARD.color} />
+                  </View>
+                  <View style={styles.wideCardBody}>
+                    <Text style={styles.wideCardTitle}>Costs</Text>
+                    <Text style={styles.wideCardSub}>Track what your business spends</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                </Pressable>
+              </Link>
+            </View>
+
             <Text style={styles.sectionTitle}>Recent activity</Text>
           </View>
         }
@@ -111,72 +172,108 @@ const styles = StyleSheet.create({
   offlineNote: {
     backgroundColor: '#fef2f2',
     color: '#b91c1c',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
-    paddingVertical: 6,
+    paddingVertical: 8,
     marginBottom: 8,
   },
   cards: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 14,
   },
   card: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 10,
-    padding: 14,
+    borderRadius: 16,
+    padding: 16,
     width: '47.5%',
-    gap: 2,
+    minHeight: 132,
+    justifyContent: 'space-between',
   },
   cardPressed: {
-    opacity: 0.6,
+    opacity: 0.65,
+  },
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  iconChip: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardValue: {
-    fontSize: 26,
+    fontSize: 34,
     fontWeight: '800',
     color: '#111827',
+    marginTop: 10,
   },
   cardLabel: {
-    fontSize: 12,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 2,
+  },
+  wideCard: {
+    borderRadius: 16,
+    padding: 16,
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  wideCardBody: {
+    flex: 1,
+    gap: 2,
+  },
+  wideCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  wideCardSub: {
+    fontSize: 14,
     color: '#6b7280',
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
     paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 8,
+    paddingTop: 24,
+    paddingBottom: 6,
   },
   activityRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 13,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e5e7eb',
   },
   activityMain: {
     flex: 1,
-    gap: 2,
+    gap: 3,
   },
   activityTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#111827',
   },
   activitySub: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6b7280',
   },
   empty: {
     textAlign: 'center',
     color: '#9ca3af',
-    paddingVertical: 24,
-    fontSize: 13,
+    paddingVertical: 32,
+    fontSize: 15,
   },
 });

@@ -96,14 +96,14 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   monthLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
   },
   offlineNote: {
     backgroundColor: '#fef2f2',
     color: '#b91c1c',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
     paddingVertical: 6,
@@ -124,16 +124,16 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   cardValue: {
-    fontSize: 19,
+    fontSize: 24,
     fontWeight: '800',
     color: '#111827',
   },
   cardLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6b7280',
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
     paddingHorizontal: 16,
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e5e7eb',
   },
@@ -154,12 +154,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   name: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: '600',
     color: '#111827',
   },
   sub: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6b7280',
   },
   amounts: {
@@ -167,18 +167,18 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   paid: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: '700',
     color: '#16a34a',
   },
   unpaid: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6b7280',
   },
   empty: {
     textAlign: 'center',
     color: '#9ca3af',
     paddingVertical: 32,
-    fontSize: 13,
+    fontSize: 15,
   },
 });
