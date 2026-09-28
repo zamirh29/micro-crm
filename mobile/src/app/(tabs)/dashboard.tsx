@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Link, useNavigation } from 'expo-router';
+import { Link, useNavigation, type Href } from 'expo-router';
 import { useLayoutEffect } from 'react';
 import {
   FlatList,
@@ -16,11 +16,26 @@ import { useApi } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import type { DashboardData } from '@/lib/types';
 
-const COUNT_CARDS: { key: keyof DashboardData['counts']; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'customers', label: 'Customers', icon: 'people-outline' },
-  { key: 'activeQuotes', label: 'Active quotes', icon: 'document-text-outline' },
-  { key: 'outstandingInvoices', label: 'Unpaid invoices', icon: 'receipt-outline' },
-  { key: 'pendingReminders', label: 'Reminders', icon: 'alarm-outline' },
+const COUNT_CARDS: {
+  key: keyof DashboardData['counts'];
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  href: Href;
+}[] = [
+  { key: 'customers', label: 'Customers', icon: 'people-outline', href: '/customers' },
+  { key: 'activeQuotes', label: 'Active quotes', icon: 'document-text-outline', href: '/quotes' },
+  {
+    key: 'outstandingInvoices',
+    label: 'Unpaid invoices',
+    icon: 'receipt-outline',
+    href: '/invoices',
+  },
+  {
+    key: 'pendingReminders',
+    label: 'Reminders',
+    icon: 'alarm-outline',
+    href: { pathname: '/invoices', params: { status: 'overdue' } },
+  },
 ];
 
 export default function DashboardScreen() {
@@ -53,11 +68,16 @@ export default function DashboardScreen() {
             {offline && <Text style={styles.offlineNote}>Offline — saved data</Text>}
             <View style={styles.cards}>
               {COUNT_CARDS.map((card) => (
-                <View key={card.key} style={styles.card}>
-                  <Ionicons name={card.icon} size={20} color="#4f46e5" />
-                  <Text style={styles.cardValue}>{data?.counts[card.key] ?? 0}</Text>
-                  <Text style={styles.cardLabel}>{card.label}</Text>
-                </View>
+                <Link key={card.key} href={card.href} asChild>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${card.label} count. Open ${card.label}`}
+                    style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
+                    <Ionicons name={card.icon} size={20} color="#4f46e5" />
+                    <Text style={styles.cardValue}>{data?.counts[card.key] ?? 0}</Text>
+                    <Text style={styles.cardLabel}>{card.label}</Text>
+                  </Pressable>
+                </Link>
               ))}
             </View>
             <Text style={styles.sectionTitle}>Recent activity</Text>
@@ -110,6 +130,9 @@ const styles = StyleSheet.create({
     padding: 14,
     width: '47.5%',
     gap: 2,
+  },
+  cardPressed: {
+    opacity: 0.6,
   },
   cardValue: {
     fontSize: 26,

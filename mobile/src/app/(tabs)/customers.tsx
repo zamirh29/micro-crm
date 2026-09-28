@@ -1,5 +1,6 @@
+import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ScreenState } from '@/components/screen-state';
 import { StatusChip } from '@/components/status-chip';
@@ -41,7 +42,11 @@ export default function CustomersScreen() {
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
         renderItem={({ item }) => (
-          <View style={styles.row}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${item.first_name} ${item.last_name}`}
+            onPress={() => router.push(`/customer/${item.id}`)}
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
                 {(item.first_name?.[0] ?? '?').toUpperCase()}
@@ -57,7 +62,7 @@ export default function CustomersScreen() {
               </Text>
             </View>
             <StatusChip status={item.status} />
-          </View>
+          </Pressable>
         )}
         ListEmptyComponent={
           loading ? null : (
@@ -101,6 +106,9 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e5e7eb',
+  },
+  rowPressed: {
+    backgroundColor: '#f3f4f6',
   },
   avatar: {
     width: 40,

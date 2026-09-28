@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
   FlatList,
@@ -20,7 +20,19 @@ const FILTERS = ['all', 'draft', 'sent', 'paid', 'overdue'] as const;
 type Filter = (typeof FILTERS)[number];
 
 export default function InvoicesScreen() {
-  const [status, setStatus] = useState<Filter>('all');
+  const params = useLocalSearchParams<{ status?: string }>();
+  const paramStatus =
+    typeof params.status === 'string' && (FILTERS as readonly string[]).includes(params.status)
+      ? (params.status as Filter)
+      : 'all';
+  const [picked, setPicked] = useState<Filter>('all');
+  const status = paramStatus !== 'all' ? paramStatus : picked;
+
+  const select = (filter: Filter) => {
+    setPicked(filter);
+    if (params.status) router.setParams({ status: '' });
+  };
+
   const path = status === 'all' ? '/api/invoices' : `/api/invoices?status=${status}`;
   const { data, loading, error, offline, refresh } = useApi<{ invoices: Invoice[] }>(
     path,
@@ -38,7 +50,7 @@ export default function InvoicesScreen() {
             return (
               <Pressable
                 key={filter}
-                onPress={() => setStatus(filter)}
+                onPress={() => select(filter)}
                 style={[styles.filter, active && styles.filterActive]}>
                 <Text style={[styles.filterText, active && styles.filterTextActive]}>
                   {filter === 'all' ? 'All' : filter}

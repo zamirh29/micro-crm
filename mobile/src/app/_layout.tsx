@@ -34,6 +34,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="quote/[id]" options={{ title: 'Quote' }} />
             <Stack.Screen name="invoice/[id]" options={{ title: 'Invoice' }} />
+            <Stack.Screen name="customer/[id]" options={{ title: 'Customer' }} />
             <Stack.Screen name="settings" options={{ title: 'Settings' }} />
           </Stack>
         </SplashGate>
