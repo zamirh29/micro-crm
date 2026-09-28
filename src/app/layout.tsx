@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import SwRegister from "@/components/sw-register";
+import RecoveryRedirect from "@/components/recovery-redirect";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="min-h-full flex flex-col">
         {children}
+        <RecoveryRedirect />
         <SwRegister />
       </body>
     </html>
