@@ -13,8 +13,12 @@ export default function RecoveryRedirect() {
   useEffect(() => {
     const { pathname, search, hash } = window.location;
     if (pathname === "/reset-password") return;
-    if (!hash.includes("access_token")) return;
-    if (!hash.includes("type=recovery")) return;
+
+    const hasCode = new URLSearchParams(search).has("code");
+    const hasRecoveryFragment =
+      hash.includes("access_token") && hash.includes("type=recovery");
+    if (!hasCode && !hasRecoveryFragment) return;
+
     window.location.replace(`/reset-password${search}${hash}`);
   }, []);
 

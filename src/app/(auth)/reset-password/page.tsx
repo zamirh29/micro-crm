@@ -7,6 +7,43 @@ import { createClient } from "@/lib/supabase/client"
 
 type Stage = "checking" | "ready" | "invalid" | "done"
 
+/**
+ * Establish the recovery session no matter which shape the emailed link has:
+ * a session cookie, a PKCE `?code=`, or implicit `#access_token` fragment
+ * tokens (the browser client is PKCE-only and ignores the latter).
+ */
+async function resolveSession(): Promise<boolean> {
+  const supabase = createClient()
+
+  const existing = await supabase.auth.getUser()
+  if (existing.data.user) return true
+
+  const url = new URL(window.location.href)
+
+  const code = url.searchParams.get("code")
+  if (code) {
+    const flowId = url.searchParams.get("sb_flow_id")
+    const { data, error } = await supabase.auth.exchangeCodeForSession(
+      code,
+      flowId ? { flowId } : undefined
+    )
+    if (!error && data.session) return true
+  }
+
+  const fragment = new URLSearchParams(window.location.hash.slice(1))
+  const access_token = fragment.get("access_token")
+  const refresh_token = fragment.get("refresh_token")
+  if (access_token && refresh_token) {
+    const { data, error } = await supabase.auth.setSession({
+      access_token,
+      refresh_token,
+    })
+    if (!error && data.session) return true
+  }
+
+  return false
+}
+
 export default function ResetPasswordPage() {
   const [stage, setStage] = useState<Stage>("checking")
   const [password, setPassword] = useState("")
@@ -17,22 +54,23 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     let cancelled = false
-    const supabase = createClient()
 
-    async function check() {
-      // The client exchanges `?code=` (PKCE) / parses `#access_token` while it
-      // initialises, so give it a moment before deciding the link is dead.
-      let result = await supabase.auth.getUser()
-      if (result.error) {
-        await new Promise((resolve) => setTimeout(resolve, 500))
+    async function run() {
+      let resolved = await resolveSession()
+      if (!resolved) {
+        // the browser client may still be exchanging the code itself
+        await new Promise((resolve) => setTimeout(resolve, 600))
         if (cancelled) return
-        result = await supabase.auth.getUser()
+        resolved = await resolveSession()
       }
       if (cancelled) return
-      setStage(result.data.user ? "ready" : "invalid")
+      if (resolved) {
+        window.history.replaceState(null, "", window.location.pathname)
+      }
+      setStage(resolved ? "ready" : "invalid")
     }
 
-    check()
+    run()
 
     return () => {
       cancelled = true
