@@ -219,6 +219,14 @@ export default function InvoiceDocument({
   companyEmail = "",
   companyWebsite = "",
 }: InvoiceDocumentProps) {
+  const contactLine = [
+    companyPhone ? `Tel: ${companyPhone}` : "",
+    companyEmail ? `Email: ${companyEmail}` : "",
+    companyWebsite ? `Web: ${companyWebsite}` : "",
+  ]
+    .filter(Boolean)
+    .join("   ·   ")
+
   const statusColor =
     invoice.status === "paid"
       ? "#16a34a"
@@ -355,18 +363,9 @@ export default function InvoiceDocument({
           {companyAddress && (
             <Text style={styles.footerLine}>{companyAddress}</Text>
           )}
-          {companyPhone && (
-            <Text style={styles.footerLine}>Tel: {companyPhone}</Text>
+          {contactLine && (
+            <Text style={styles.footerLine}>{contactLine}</Text>
           )}
-          {companyEmail && (
-            <Text style={styles.footerLine}>Email: {companyEmail}</Text>
-          )}
-          {companyWebsite && (
-            <Text style={styles.footerLine}>Web: {companyWebsite}</Text>
-          )}
-          <Text style={styles.footerLine}>
-            Thank you for your business
-          </Text>
         </View>
       </Page>
     </Document>

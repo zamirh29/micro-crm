@@ -206,6 +206,14 @@ export default function QuoteDocument({
   companyEmail = "",
   companyWebsite = "",
 }: QuoteDocumentProps) {
+  const contactLine = [
+    companyPhone ? `Tel: ${companyPhone}` : "",
+    companyEmail ? `Email: ${companyEmail}` : "",
+    companyWebsite ? `Web: ${companyWebsite}` : "",
+  ]
+    .filter(Boolean)
+    .join("   ·   ")
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -335,18 +343,9 @@ export default function QuoteDocument({
           {companyAddress && (
             <Text style={styles.footerLine}>{companyAddress}</Text>
           )}
-          {companyPhone && (
-            <Text style={styles.footerLine}>Tel: {companyPhone}</Text>
+          {contactLine && (
+            <Text style={styles.footerLine}>{contactLine}</Text>
           )}
-          {companyEmail && (
-            <Text style={styles.footerLine}>Email: {companyEmail}</Text>
-          )}
-          {companyWebsite && (
-            <Text style={styles.footerLine}>Web: {companyWebsite}</Text>
-          )}
-          <Text style={styles.footerLine}>
-            Thank you for your business
-          </Text>
         </View>
       </Page>
     </Document>
