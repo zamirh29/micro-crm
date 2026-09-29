@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -39,7 +40,9 @@ export default function SettingsScreen() {
         <Text style={styles.signOutText}>Sign out</Text>
       </Pressable>
 
-      <Text style={styles.footer}>MicroCRM</Text>
+      <Text style={styles.footer}>
+        MicroCRM v{Constants.expoConfig?.version ?? '1.0.1'}
+      </Text>
     </ScrollView>
   );
 }
