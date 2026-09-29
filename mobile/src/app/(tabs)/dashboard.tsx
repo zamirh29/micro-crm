@@ -16,11 +16,13 @@ import { useApi } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import type { DashboardData } from '@/lib/types';
 
+type Variant = 'blue' | 'amber' | 'red' | 'purple' | 'green';
+
 type Card = {
   key: keyof DashboardData['counts'];
   label: string;
   href: Href;
-  tint: string;
+  variant: Variant;
 };
 
 const COUNT_CARDS: Card[] = [
@@ -28,32 +30,55 @@ const COUNT_CARDS: Card[] = [
     key: 'customers',
     label: 'Customers',
     href: '/customers',
-    tint: '#eef2ff',
+    variant: 'blue',
   },
   {
     key: 'activeQuotes',
     label: 'Active quotes',
     href: '/quotes',
-    tint: '#fffbeb',
+    variant: 'amber',
   },
   {
     key: 'outstandingInvoices',
     label: 'Unpaid invoices',
     href: '/invoices',
-    tint: '#fef2f2',
+    variant: 'red',
   },
   {
     key: 'pendingReminders',
     label: 'Reminders',
     href: { pathname: '/invoices', params: { status: 'overdue' } },
-    tint: '#f5f3ff',
+    variant: 'purple',
   },
 ];
 
 const COSTS_CARD = {
   href: '/costs' as Href,
-  tint: '#ecfdf5',
+  variant: 'green' as Variant,
 };
+
+const CARD_VARIANT_STYLES = StyleSheet.create({
+  blue: {
+    backgroundColor: '#e0e7ff',
+    borderColor: '#a5b4fc',
+  },
+  amber: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#fcd34d',
+  },
+  red: {
+    backgroundColor: '#fee2e2',
+    borderColor: '#fca5a5',
+  },
+  purple: {
+    backgroundColor: '#ede9fe',
+    borderColor: '#c4b5fd',
+  },
+  green: {
+    backgroundColor: '#d1fae5',
+    borderColor: '#6ee7b7',
+  },
+});
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
@@ -91,7 +116,7 @@ export default function DashboardScreen() {
                     accessibilityLabel={`${card.label} count. Open ${card.label}`}
                     style={({ pressed }) => [
                       styles.card,
-                      { backgroundColor: card.tint },
+                      CARD_VARIANT_STYLES[card.variant],
                       pressed && styles.cardPressed,
                     ]}>
                     <Text style={styles.cardValue}>{data?.counts[card.key] ?? 0}</Text>
@@ -108,7 +133,7 @@ export default function DashboardScreen() {
                   accessibilityLabel="Costs. Track what your business spends"
                   style={({ pressed }) => [
                     styles.wideCard,
-                    { backgroundColor: COSTS_CARD.tint },
+                    CARD_VARIANT_STYLES[COSTS_CARD.variant],
                     pressed && styles.cardPressed,
                   ]}>
                   <Text style={styles.wideCardTitle}>Costs</Text>
@@ -172,6 +197,8 @@ const styles = StyleSheet.create({
     padding: 12,
     width: '47.5%',
     gap: 2,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   cardPressed: {
     opacity: 0.65,
@@ -191,6 +218,8 @@ const styles = StyleSheet.create({
     paddingRight: 36,
     width: '100%',
     gap: 2,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   wideCardTitle: {
     fontSize: 18,
