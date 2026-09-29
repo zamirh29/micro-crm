@@ -126,7 +126,10 @@ export default function DashboardScreen() {
               ))}
             </View>
 
-            <View style={styles.cards}>
+            <View style={styles.divider} />
+
+            <Text style={styles.sectionTitle}>Costs</Text>
+            <View style={styles.cardsFlush}>
               <Link href={COSTS_CARD.href} asChild>
                 <Pressable
                   accessibilityRole="button"
@@ -136,17 +139,19 @@ export default function DashboardScreen() {
                     CARD_VARIANT_STYLES[COSTS_CARD.variant],
                     pressed && styles.cardPressed,
                   ]}>
-                  <Text style={styles.wideCardTitle}>Costs</Text>
-                  <Text style={styles.wideCardSub}>Track what your business spends</Text>
+                  <Text style={styles.cardValue}>Costs</Text>
+                  <Text style={styles.cardLabel}>Track what your business spends</Text>
                   <Ionicons
                     name="chevron-forward"
                     size={20}
-                    color="#9ca3af"
+                    color="#6b7280"
                     style={styles.wideCardChevron}
                   />
                 </Pressable>
               </Link>
             </View>
+
+            <View style={styles.divider} />
 
             <Text style={styles.sectionTitle}>Recent activity</Text>
           </View>
@@ -221,14 +226,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
-  wideCardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
+  cardsFlush: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 4,
   },
-  wideCardSub: {
-    fontSize: 14,
-    color: '#6b7280',
+  divider: {
+    height: 1,
+    backgroundColor: '#e5e7eb',
+    marginHorizontal: 16,
+    marginTop: 18,
   },
   wideCardChevron: {
     position: 'absolute',
@@ -241,8 +250,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
     paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 6,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   activityRow: {
     flexDirection: 'row',
