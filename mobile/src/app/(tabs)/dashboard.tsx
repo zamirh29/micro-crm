@@ -19,52 +19,40 @@ import type { DashboardData } from '@/lib/types';
 type Card = {
   key: keyof DashboardData['counts'];
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
   href: Href;
   tint: string;
-  color: string;
 };
 
 const COUNT_CARDS: Card[] = [
   {
     key: 'customers',
     label: 'Customers',
-    icon: 'people-outline',
     href: '/customers',
     tint: '#eef2ff',
-    color: '#4f46e5',
   },
   {
     key: 'activeQuotes',
     label: 'Active quotes',
-    icon: 'document-text-outline',
     href: '/quotes',
     tint: '#fffbeb',
-    color: '#d97706',
   },
   {
     key: 'outstandingInvoices',
     label: 'Unpaid invoices',
-    icon: 'receipt-outline',
     href: '/invoices',
     tint: '#fef2f2',
-    color: '#dc2626',
   },
   {
     key: 'pendingReminders',
     label: 'Reminders',
-    icon: 'alarm-outline',
     href: { pathname: '/invoices', params: { status: 'overdue' } },
     tint: '#f5f3ff',
-    color: '#7c3aed',
   },
 ];
 
 const COSTS_CARD = {
-  icon: 'wallet-outline' as keyof typeof Ionicons.glyphMap,
   href: '/costs' as Href,
   tint: '#ecfdf5',
-  color: '#059669',
 };
 
 export default function DashboardScreen() {
@@ -106,12 +94,6 @@ export default function DashboardScreen() {
                       { backgroundColor: card.tint },
                       pressed && styles.cardPressed,
                     ]}>
-                    <View style={styles.cardTop}>
-                      <View style={[styles.iconChip, { backgroundColor: '#ffffff' }]}>
-                        <Ionicons name={card.icon} size={24} color={card.color} />
-                      </View>
-                      <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-                    </View>
                     <Text style={styles.cardValue}>{data?.counts[card.key] ?? 0}</Text>
                     <Text style={styles.cardLabel}>{card.label}</Text>
                   </Pressable>
@@ -129,14 +111,14 @@ export default function DashboardScreen() {
                     { backgroundColor: COSTS_CARD.tint },
                     pressed && styles.cardPressed,
                   ]}>
-                  <View style={[styles.iconChip, { backgroundColor: '#ffffff' }]}>
-                    <Ionicons name={COSTS_CARD.icon} size={24} color={COSTS_CARD.color} />
-                  </View>
-                  <View style={styles.wideCardBody}>
-                    <Text style={styles.wideCardTitle}>Costs</Text>
-                    <Text style={styles.wideCardSub}>Track what your business spends</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                  <Text style={styles.wideCardTitle}>Costs</Text>
+                  <Text style={styles.wideCardSub}>Track what your business spends</Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color="#9ca3af"
+                    style={styles.wideCardChevron}
+                  />
                 </Pressable>
               </Link>
             </View>
@@ -181,54 +163,33 @@ const styles = StyleSheet.create({
   cards: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 10,
     paddingHorizontal: 16,
     paddingTop: 14,
   },
   card: {
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 10,
+    padding: 12,
     width: '47.5%',
-    minHeight: 132,
-    justifyContent: 'space-between',
+    gap: 2,
   },
   cardPressed: {
     opacity: 0.65,
   },
-  cardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  iconChip: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   cardValue: {
-    fontSize: 34,
+    fontSize: 24,
     fontWeight: '800',
     color: '#111827',
-    marginTop: 10,
   },
   cardLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#374151',
-    marginTop: 2,
+    fontSize: 14,
+    color: '#6b7280',
   },
   wideCard: {
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 10,
+    padding: 12,
+    paddingRight: 36,
     width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  wideCardBody: {
-    flex: 1,
     gap: 2,
   },
   wideCardTitle: {
@@ -239,6 +200,12 @@ const styles = StyleSheet.create({
   wideCardSub: {
     fontSize: 14,
     color: '#6b7280',
+  },
+  wideCardChevron: {
+    position: 'absolute',
+    right: 14,
+    top: '50%',
+    marginTop: -10,
   },
   sectionTitle: {
     fontSize: 18,
