@@ -16,13 +16,10 @@ import { useApi } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import type { DashboardData } from '@/lib/types';
 
-type Variant = 'blue' | 'amber' | 'red' | 'purple' | 'green';
-
 type Card = {
   key: keyof DashboardData['counts'];
   label: string;
   href: Href;
-  variant: Variant;
 };
 
 const COUNT_CARDS: Card[] = [
@@ -30,55 +27,27 @@ const COUNT_CARDS: Card[] = [
     key: 'customers',
     label: 'Customers',
     href: '/customers',
-    variant: 'blue',
   },
   {
     key: 'activeQuotes',
     label: 'Active quotes',
     href: '/quotes',
-    variant: 'amber',
   },
   {
     key: 'outstandingInvoices',
     label: 'Unpaid invoices',
     href: '/invoices',
-    variant: 'red',
   },
   {
     key: 'pendingReminders',
     label: 'Reminders',
     href: { pathname: '/invoices', params: { status: 'overdue' } },
-    variant: 'purple',
   },
 ];
 
 const COSTS_CARD = {
   href: '/costs' as Href,
-  variant: 'green' as Variant,
 };
-
-const CARD_VARIANT_STYLES = StyleSheet.create({
-  blue: {
-    backgroundColor: '#e0e7ff',
-    borderColor: '#a5b4fc',
-  },
-  amber: {
-    backgroundColor: '#fef3c7',
-    borderColor: '#fcd34d',
-  },
-  red: {
-    backgroundColor: '#fee2e2',
-    borderColor: '#fca5a5',
-  },
-  purple: {
-    backgroundColor: '#ede9fe',
-    borderColor: '#c4b5fd',
-  },
-  green: {
-    backgroundColor: '#d1fae5',
-    borderColor: '#6ee7b7',
-  },
-});
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
@@ -116,7 +85,6 @@ export default function DashboardScreen() {
                     accessibilityLabel={`${card.label} count. Open ${card.label}`}
                     style={({ pressed }) => [
                       styles.card,
-                      CARD_VARIANT_STYLES[card.variant],
                       pressed && styles.cardPressed,
                     ]}>
                     <Text style={styles.cardValue}>{data?.counts[card.key] ?? 0}</Text>
@@ -136,7 +104,6 @@ export default function DashboardScreen() {
                   accessibilityLabel="Costs. Track what your business spends"
                   style={({ pressed }) => [
                     styles.wideCard,
-                    CARD_VARIANT_STYLES[COSTS_CARD.variant],
                     pressed && styles.cardPressed,
                   ]}>
                   <Text style={styles.cardValue}>Costs</Text>
@@ -198,6 +165,7 @@ const styles = StyleSheet.create({
     paddingTop: 14,
   },
   card: {
+    backgroundColor: '#f9fafb',
     borderRadius: 10,
     padding: 12,
     width: '47.5%',
@@ -218,6 +186,7 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   wideCard: {
+    backgroundColor: '#f9fafb',
     borderRadius: 10,
     padding: 12,
     paddingRight: 36,
