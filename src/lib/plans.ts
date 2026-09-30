@@ -17,6 +17,7 @@ export const PLANS = {
     features: [
       "Unlimited leads & invoices",
       "Unlimited quotes",
+      "Edit invoices and quotes after creation",
       "Automated reminders",
       "UK tax reports & MTD tracking",
       "Custom branding",

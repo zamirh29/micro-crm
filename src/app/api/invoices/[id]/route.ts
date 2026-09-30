@@ -3,6 +3,7 @@ import { z } from "zod"
 import { requireApiUser } from "@/lib/api-auth"
 import { jsonError, readJson, errorFromThrown } from "@/lib/api-utils"
 import { updateInvoiceRecord, deleteInvoiceRecord } from "@/lib/documents"
+import { checkEditGate } from "@/lib/subscription"
 
 const lineItemSchema = z.object({
   description: z.string().trim().min(1, "Line item description is required"),
@@ -19,8 +20,9 @@ const patchSchema = z.object({
   due_date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "due_date must be YYYY-MM-DD")
-    .optional(),
+    .nullish(),
   status: z.enum(["draft", "sent", "paid", "overdue"]).optional(),
+  currency: z.string().min(1).optional(),
   items: z.array(lineItemSchema).min(1, "At least one line item is required").optional(),
 })
 
@@ -43,7 +45,11 @@ export async function GET(
   if (error) return jsonError(error.message, 400)
   if (!invoice) return jsonError("Invoice not found", 404)
 
-  return NextResponse.json({ invoice })
+  const gate = await checkEditGate(auth.supabase, auth.user, {
+    status: invoice.status as string | null,
+  })
+
+  return NextResponse.json({ invoice, can_edit: gate.ok })
 }
 
 export async function PATCH(
@@ -54,6 +60,19 @@ export async function PATCH(
   if (!auth.ok) return auth.response
 
   const { id } = await params
+
+  const { data: existing, error: lookupError } = await auth.supabase
+    .from("invoices")
+    .select("status")
+    .eq("id", id)
+    .eq("org_id", auth.orgId)
+    .maybeSingle()
+
+  if (lookupError) return jsonError(lookupError.message, 400)
+  if (!existing) return jsonError("Invoice not found", 404)
+
+  const gate = await checkEditGate(auth.supabase, auth.user, existing)
+  if (!gate.ok) return jsonError(gate.message, gate.status)
 
   const parsed = await readJson(request, patchSchema)
   if (!parsed.ok) return parsed.response

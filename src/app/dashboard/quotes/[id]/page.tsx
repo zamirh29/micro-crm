@@ -6,10 +6,13 @@ import {
   FileText,
   Trash2,
   Download,
+  Crown,
+  Pencil,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { formatCurrency, formatDate, cn } from "@/lib/utils"
 import { getCompanyProfile } from "@/lib/company"
+import { checkEditGate } from "@/lib/subscription"
 import type { QuoteStatus, QuoteItem } from "@/types/database"
 import { sendQuote, deleteQuote, convertToInvoice } from "../actions"
 
@@ -53,6 +56,8 @@ export default async function QuoteDetailPage({
   const items = quote.quote_items as QuoteItem[]
 
   const company = await getCompanyProfile(supabase, quote.org_id)
+
+  const gate = await checkEditGate(supabase, user, { status: quote.status })
 
   const companyLines = [
     company.address,
@@ -150,6 +155,23 @@ export default async function QuoteDetailPage({
                 Convert to Invoice
               </button>
             </form>
+          )}
+          {gate.ok ? (
+            <Link
+              href={`/dashboard/quotes/${quote.id}/edit`}
+              className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
+            >
+              <Pencil className="h-4 w-4" />
+              Edit
+            </Link>
+          ) : (
+            <Link
+              href="/dashboard/billing"
+              className="inline-flex items-center gap-2 rounded-md border border-primary/30 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+            >
+              <Crown className="h-4 w-4" />
+              Upgrade to edit
+            </Link>
           )}
           <form action={deleteQuote.bind(null, quote.id)}>
             <button

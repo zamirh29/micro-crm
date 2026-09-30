@@ -336,6 +336,7 @@ export interface QuotePatch {
   tax_rate?: number
   notes?: string | null
   valid_until?: string | null
+  currency?: string
   status?: QuoteStatus
   items?: LineItemInput[]
 }
@@ -385,6 +386,7 @@ export async function updateQuoteRecord(
   if (input.description !== undefined) patch.description = input.description
   if (input.notes !== undefined) patch.notes = input.notes
   if (input.valid_until !== undefined) patch.valid_until = input.valid_until
+  if (input.currency !== undefined) patch.currency = input.currency
   if (input.status !== undefined) patch.status = input.status
 
   const { error } = await supabase.from("quotes").update(patch).eq("id", id)
@@ -741,6 +743,7 @@ export interface InvoicePatch {
   tax_rate?: number
   notes?: string | null
   due_date?: string | null
+  currency?: string
   status?: InvoiceStatus
   items?: LineItemInput[]
 }
@@ -790,6 +793,7 @@ export async function updateInvoiceRecord(
   if (input.description !== undefined) patch.description = input.description
   if (input.notes !== undefined) patch.notes = input.notes
   if (input.due_date !== undefined) patch.due_date = input.due_date
+  if (input.currency !== undefined) patch.currency = input.currency
   if (input.status !== undefined) patch.status = input.status
 
   const { error } = await supabase.from("invoices").update(patch).eq("id", id)

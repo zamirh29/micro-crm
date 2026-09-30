@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, Trash2 } from "lucide-react"
-import { createInvoice } from "../actions"
+import { createInvoice, updateInvoice } from "../actions"
 import CustomerSelect from "@/components/customer-select"
 import { CURRENCIES, currencySymbol, DEFAULT_COMPANY } from "@/lib/company"
 
@@ -15,6 +15,18 @@ interface LineItem {
 
 interface InvoiceFormProps {
   defaultCurrency?: string
+  invoice?: {
+    id: string
+    contact_id: string
+    title: string
+    description: string | null
+    tax_rate: number
+    notes: string | null
+    due_date: string
+    currency: string
+  }
+  items?: LineItem[]
+  error?: string | null
 }
 
 function formatPence(amount: number, symbol: string): string {
@@ -25,24 +37,33 @@ function parsePence(value: string): number {
   return Math.round(parseFloat(value || "0") * 100)
 }
 
-export default function InvoiceForm({ defaultCurrency }: InvoiceFormProps) {
+export default function InvoiceForm({
+  defaultCurrency,
+  invoice,
+  items: initialItems,
+  error: serverError,
+}: InvoiceFormProps) {
   const router = useRouter()
+  const isEdit = Boolean(invoice)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [form, setForm] = useState({
-    contact_id: "",
-    title: "",
-    description: "",
-    tax_rate: "0",
-    notes: "",
-    due_date: "",
-    currency: defaultCurrency || DEFAULT_COMPANY.currency,
+    contact_id: invoice?.contact_id ?? "",
+    title: invoice?.title ?? "",
+    description: invoice?.description ?? "",
+    tax_rate: invoice ? String(invoice.tax_rate) : "0",
+    notes: invoice?.notes ?? "",
+    due_date: invoice?.due_date ?? "",
+    currency:
+      invoice?.currency || defaultCurrency || DEFAULT_COMPANY.currency,
   })
 
-  const [items, setItems] = useState<LineItem[]>([
-    { description: "", quantity: 1, unit_price: 0 },
-  ])
+  const [items, setItems] = useState<LineItem[]>(
+    isEdit
+      ? (initialItems ?? []).map((item) => ({ ...item }))
+      : [{ description: "", quantity: 1, unit_price: 0 }]
+  )
 
   const symbol = currencySymbol(form.currency)
 
@@ -95,6 +116,12 @@ export default function InvoiceForm({ defaultCurrency }: InvoiceFormProps) {
       fd.set("currency", form.currency)
       fd.set("items", JSON.stringify(items))
 
+      if (invoice) {
+        await updateInvoice(invoice.id, fd)
+        router.push(`/dashboard/invoices/${invoice.id}`)
+        return
+      }
+
       await createInvoice(fd)
       router.push("/dashboard/invoices")
     } catch (err) {
@@ -103,19 +130,25 @@ export default function InvoiceForm({ defaultCurrency }: InvoiceFormProps) {
     }
   }
 
+  const bannerError = error ?? serverError
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">New Invoice</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {isEdit ? "Edit Invoice" : "New Invoice"}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Create a new invoice for a contact.
+          {isEdit
+            ? "Update the details for this invoice."
+            : "Create a new invoice for a contact."}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {error && (
+        {bannerError && (
           <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
-            {error}
+            {bannerError}
           </div>
         )}
 
@@ -139,7 +172,7 @@ export default function InvoiceForm({ defaultCurrency }: InvoiceFormProps) {
               <input
                 id="due_date"
                 type="date"
-                required
+                required={!invoice}
                 value={form.due_date}
                 onChange={(e) =>
                   setForm({ ...form, due_date: e.target.value })
@@ -365,7 +398,13 @@ export default function InvoiceForm({ defaultCurrency }: InvoiceFormProps) {
             disabled={loading}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
           >
-            {loading ? "Creating..." : "Create Invoice"}
+            {loading
+              ? isEdit
+                ? "Saving..."
+                : "Creating..."
+              : isEdit
+                ? "Save changes"
+                : "Create Invoice"}
           </button>
           <button
             type="button"

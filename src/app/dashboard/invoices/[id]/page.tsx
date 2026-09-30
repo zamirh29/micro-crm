@@ -6,10 +6,13 @@ import {
   CheckCircle,
   Trash2,
   Download,
+  Pencil,
+  Crown,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { formatCurrency, formatDate, cn } from "@/lib/utils"
 import { getCompanyProfile } from "@/lib/company"
+import { checkEditGate } from "@/lib/subscription"
 import type { InvoiceStatus, InvoiceItem } from "@/types/database"
 import { sendInvoice, deleteInvoice, markAsPaid } from "../actions"
 
@@ -52,6 +55,10 @@ export default async function InvoiceDetailPage({
   const items = invoice.invoice_items as InvoiceItem[]
 
   const company = await getCompanyProfile(supabase, invoice.org_id)
+
+  const editGate = await checkEditGate(supabase, user, {
+    status: invoice.status,
+  })
 
   const companyLines = [
     company.address,
@@ -149,6 +156,23 @@ export default async function InvoiceDetailPage({
                 Mark as Paid
               </button>
             </form>
+          )}
+          {editGate.ok ? (
+            <Link
+              href={`/dashboard/invoices/${invoice.id}/edit`}
+              className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
+            >
+              <Pencil className="h-4 w-4" />
+              Edit
+            </Link>
+          ) : (
+            <Link
+              href="/dashboard/billing"
+              className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
+            >
+              <Crown className="h-4 w-4 text-primary" />
+              Upgrade to edit
+            </Link>
           )}
           <form action={deleteInvoice.bind(null, invoice.id)}>
             <button

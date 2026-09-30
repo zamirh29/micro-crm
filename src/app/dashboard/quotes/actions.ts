@@ -10,7 +10,9 @@ import {
   sendQuoteRecord,
   convertQuoteToInvoiceRecord,
   type LineItemInput,
+  type QuotePatch,
 } from "@/lib/documents"
+import { checkEditGate } from "@/lib/subscription"
 import type { QuoteStatus } from "@/types/database"
 
 async function getSession() {
@@ -64,25 +66,46 @@ export async function createQuote(formData: FormData) {
 export async function updateQuote(id: string, formData: FormData) {
   const { supabase, user, orgId } = await getSession()
 
+  const { data: existing } = await supabase
+    .from("quotes")
+    .select("status, org_id")
+    .eq("id", id)
+    .maybeSingle()
+
+  if (!existing || existing.org_id !== orgId) redirect("/dashboard/quotes")
+
+  const gate = await checkEditGate(supabase, user, existing)
+  if (!gate.ok) {
+    redirect(`/dashboard/quotes/${id}/edit?error=${encodeURIComponent(gate.message)}`)
+  }
+
   const items = JSON.parse(formData.get("items") as string) as LineItemInput[]
+
+  const rawStatus = formData.get("status")
+
+  const input: QuotePatch = {
+    title: (formData.get("title") as string) ?? "",
+    description: (formData.get("description") as string) || null,
+    tax_rate: Number(formData.get("tax_rate")) || 0,
+    notes: (formData.get("notes") as string) || null,
+    valid_until: formData.has("valid_until")
+      ? ((formData.get("valid_until") as string) || null)
+      : undefined,
+    currency: (formData.get("currency") as string) || undefined,
+    items,
+  }
+  if (typeof rawStatus === "string" && rawStatus) input.status = rawStatus as QuoteStatus
 
   await updateQuoteRecord(supabase, {
     orgId,
     userId: user.id,
     id,
-    input: {
-      title: (formData.get("title") as string) ?? "",
-      description: (formData.get("description") as string) || null,
-      tax_rate: Number(formData.get("tax_rate")) || 0,
-      notes: (formData.get("notes") as string) || null,
-      valid_until: (formData.get("valid_until") as string) || undefined,
-      status: formData.get("status") as QuoteStatus,
-      items,
-    },
+    input,
   })
 
   revalidatePath("/dashboard/quotes")
   revalidatePath(`/dashboard/quotes/${id}`)
+  redirect(`/dashboard/quotes/${id}`)
 }
 
 export async function deleteQuote(id: string) {

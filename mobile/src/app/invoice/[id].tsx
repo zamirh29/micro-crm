@@ -1,5 +1,6 @@
-import { useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenState } from '@/components/screen-state';
@@ -13,11 +14,36 @@ export default function InvoiceDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
   const [busy, setBusy] = useState<string | null>(null);
-  const { data, loading, error, refresh } = useApi<{ invoice: Invoice }>(
+  const { data, loading, error, refresh } = useApi<{ invoice: Invoice; can_edit: boolean }>(
     id ? `/api/invoices/${id}` : null,
     `cache:invoice:${id}`
   );
   const invoice = data?.invoice;
+  const canEdit = data?.can_edit === true;
+
+  // Re-read the invoice whenever the screen regains focus so edits made on the
+  // edit screen (or on the web) are reflected here.
+  const focused = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!focused.current) {
+        focused.current = true;
+        return;
+      }
+      refresh();
+    }, [refresh])
+  );
+
+  const edit = () => {
+    if (!canEdit) {
+      Alert.alert(
+        'Pro feature',
+        'Editing invoices and quotes is a Pro feature. Upgrade at crm.dtmstechsolutions.co.uk'
+      );
+      return;
+    }
+    router.push(`/invoice/edit/${id}`);
+  };
 
   async function runAction(name: string, action: () => Promise<void>) {
     if (busy) return;
@@ -100,6 +126,16 @@ export default function InvoiceDetailScreen() {
           </ScrollView>
 
           <View style={styles.actions}>
+            <Pressable
+              style={[styles.button, styles.secondaryButton]}
+              onPress={edit}
+              accessibilityRole="button"
+              accessibilityLabel="Edit invoice">
+              <View style={styles.buttonContent}>
+                <Ionicons name="create-outline" size={17} color="#374151" />
+                <Text style={styles.secondaryText}>Edit</Text>
+              </View>
+            </Pressable>
             <Pressable
               style={[styles.button, styles.secondaryButton]}
               onPress={downloadPdf}
@@ -254,6 +290,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   primaryButton: {
     backgroundColor: '#4f46e5',

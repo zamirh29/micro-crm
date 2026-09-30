@@ -10,7 +10,9 @@ import {
   sendInvoiceRecord,
   markInvoicePaidRecord,
   type LineItemInput,
+  type InvoicePatch,
 } from "@/lib/documents"
+import { checkEditGate } from "@/lib/subscription"
 import type { InvoiceStatus } from "@/types/database"
 
 async function getSession() {
@@ -64,25 +66,46 @@ export async function createInvoice(formData: FormData) {
 export async function updateInvoice(id: string, formData: FormData) {
   const { supabase, user, orgId } = await getSession()
 
+  const { data: existing } = await supabase
+    .from("invoices")
+    .select("status, org_id")
+    .eq("id", id)
+    .maybeSingle()
+
+  if (!existing || existing.org_id !== orgId) redirect("/dashboard/invoices")
+
+  const gate = await checkEditGate(supabase, user, existing)
+  if (!gate.ok) {
+    redirect(`/dashboard/invoices/${id}/edit?error=${encodeURIComponent(gate.message)}`)
+  }
+
   const items = JSON.parse(formData.get("items") as string) as LineItemInput[]
+
+  const rawStatus = formData.get("status")
+
+  const input: InvoicePatch = {
+    title: (formData.get("title") as string) ?? "",
+    description: (formData.get("description") as string) || null,
+    tax_rate: Number(formData.get("tax_rate")) || 0,
+    notes: (formData.get("notes") as string) || null,
+    due_date: formData.has("due_date")
+      ? ((formData.get("due_date") as string) || null)
+      : undefined,
+    currency: (formData.get("currency") as string) || undefined,
+    items,
+  }
+  if (typeof rawStatus === "string" && rawStatus) input.status = rawStatus as InvoiceStatus
 
   await updateInvoiceRecord(supabase, {
     orgId,
     userId: user.id,
     id,
-    input: {
-      title: (formData.get("title") as string) ?? "",
-      description: (formData.get("description") as string) || null,
-      tax_rate: Number(formData.get("tax_rate")) || 0,
-      notes: (formData.get("notes") as string) || null,
-      due_date: (formData.get("due_date") as string) || undefined,
-      status: formData.get("status") as InvoiceStatus,
-      items,
-    },
+    input,
   })
 
   revalidatePath("/dashboard/invoices")
   revalidatePath(`/dashboard/invoices/${id}`)
+  redirect(`/dashboard/invoices/${id}`)
 }
 
 export async function deleteInvoice(id: string) {

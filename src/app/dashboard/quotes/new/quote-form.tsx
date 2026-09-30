@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { ArrowLeft, Plus, Trash2 } from "lucide-react"
 import Link from "next/link"
-import { createQuote } from "../actions"
+import { createQuote, updateQuote } from "../actions"
 import CustomerSelect from "@/components/customer-select"
 import {
   CURRENCIES,
@@ -19,33 +19,53 @@ interface LineItem {
 
 interface QuoteFormProps {
   defaultCurrency?: string
+  quote?: {
+    id: string
+    contact_id: string
+    title: string
+    description: string | null
+    tax_rate: number
+    notes: string | null
+    valid_until: string | null
+    currency: string
+  }
+  quoteItems?: { description: string; quantity: number; unit_price: number }[]
+  error?: string | null
 }
 
-export default function QuoteForm({ defaultCurrency }: QuoteFormProps) {
-  const [contactId, setContactId] = useState("")
+export default function QuoteForm({
+  defaultCurrency,
+  quote,
+  quoteItems,
+  error: initialError,
+}: QuoteFormProps) {
+  const [contactId, setContactId] = useState(quote?.contact_id ?? "")
   const [currency, setCurrency] = useState(
-    defaultCurrency || DEFAULT_COMPANY.currency
+    quote?.currency || defaultCurrency || DEFAULT_COMPANY.currency
   )
-  const [items, setItems] = useState<LineItem[]>([
-    { description: "", quantity: 1, unit_price: 0 },
-  ])
+  const [items, setItems] = useState<LineItem[]>(
+    quoteItems && quoteItems.length > 0
+      ? quoteItems
+      : [{ description: "", quantity: 1, unit_price: 0 }]
+  )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (quote) return
     const defaultDate = new Date()
     defaultDate.setDate(defaultDate.getDate() + 30)
     const dateInput = document.getElementById("valid_until") as HTMLInputElement
     if (dateInput) {
       dateInput.value = defaultDate.toISOString().split("T")[0]
     }
-  }, [])
+  }, [quote])
 
   const subtotal = items.reduce(
     (sum, item) => sum + item.quantity * item.unit_price,
     0
   )
-  const taxRate = 20
+  const taxRate = quote?.tax_rate ?? 20
   const taxAmount = Math.round(subtotal * (taxRate / 100))
   const total = subtotal + taxAmount
   const symbol = currencySymbol(currency)
@@ -89,7 +109,11 @@ export default function QuoteForm({ defaultCurrency }: QuoteFormProps) {
     formData.set("currency", currency)
 
     try {
-      await createQuote(formData)
+      if (quote) {
+        await updateQuote(quote.id, formData)
+      } else {
+        await createQuote(formData)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
       setLoading(false)
@@ -104,21 +128,31 @@ export default function QuoteForm({ defaultCurrency }: QuoteFormProps) {
     <div className="max-w-3xl space-y-6">
       <div className="flex items-center gap-4">
         <Link
-          href="/dashboard/quotes"
+          href={quote ? `/dashboard/quotes/${quote.id}` : "/dashboard/quotes"}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
         </Link>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">New Quote</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {quote ? "Edit Quote" : "New Quote"}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Create a new quote for your client
+            {quote
+              ? "Update the details for this quote"
+              : "Create a new quote for your client"}
           </p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {initialError && (
+          <div className="bg-red-50 text-red-700 border border-red-200 rounded-md px-4 py-3 text-sm">
+            {initialError}
+          </div>
+        )}
+
         {error && (
           <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             {error}
@@ -147,7 +181,8 @@ export default function QuoteForm({ defaultCurrency }: QuoteFormProps) {
                 id="valid_until"
                 name="valid_until"
                 type="date"
-                required
+                defaultValue={quote?.valid_until ?? undefined}
+                required={!quote}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
@@ -183,6 +218,7 @@ export default function QuoteForm({ defaultCurrency }: QuoteFormProps) {
               id="title"
               name="title"
               type="text"
+              defaultValue={quote?.title}
               required
               placeholder="e.g. Website Redesign Proposal"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -200,6 +236,7 @@ export default function QuoteForm({ defaultCurrency }: QuoteFormProps) {
               id="description"
               name="description"
               rows={3}
+              defaultValue={quote?.description ?? undefined}
               placeholder="Optional description or scope of work"
               className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
@@ -297,6 +334,7 @@ export default function QuoteForm({ defaultCurrency }: QuoteFormProps) {
             id="notes"
             name="notes"
             rows={3}
+            defaultValue={quote?.notes ?? undefined}
             placeholder="Internal notes (not shown to client)"
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
@@ -314,7 +352,13 @@ export default function QuoteForm({ defaultCurrency }: QuoteFormProps) {
             disabled={loading}
             className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
           >
-            {loading ? "Creating..." : "Create Quote"}
+            {loading
+              ? quote
+                ? "Saving..."
+                : "Creating..."
+              : quote
+                ? "Save changes"
+                : "Create Quote"}
           </button>
         </div>
       </form>
