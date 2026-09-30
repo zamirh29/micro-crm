@@ -41,7 +41,7 @@ export default function SettingsScreen() {
       </Pressable>
 
       <Text style={styles.footer}>
-        MicroCRM v{Constants.expoConfig?.version ?? '1.0.2'}
+        MicroCRM v{Constants.expoConfig?.version ?? '1.0.3'}
       </Text>
     </ScrollView>
   );

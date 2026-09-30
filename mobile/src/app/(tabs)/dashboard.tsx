@@ -79,18 +79,17 @@ export default function DashboardScreen() {
             {offline && <Text style={styles.offlineNote}>Offline — saved data</Text>}
             <View style={styles.cards}>
               {COUNT_CARDS.map((card) => (
-                <Link key={card.key} href={card.href} asChild>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${card.label} count. Open ${card.label}`}
-                    style={({ pressed }) => [
-                      styles.card,
-                      pressed && styles.cardPressed,
-                    ]}>
-                    <Text style={styles.cardValue}>{data?.counts[card.key] ?? 0}</Text>
-                    <Text style={styles.cardLabel}>{card.label}</Text>
-                  </Pressable>
-                </Link>
+                <View key={card.key} style={styles.card}>
+                  <Link href={card.href} asChild>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${card.label} count. Open ${card.label}`}
+                      android_ripple={{ color: '#e5e7eb' }}>
+                      <Text style={styles.cardValue}>{data?.counts[card.key] ?? 0}</Text>
+                      <Text style={styles.cardLabel}>{card.label}</Text>
+                    </Pressable>
+                  </Link>
+                </View>
               ))}
             </View>
 
@@ -98,24 +97,23 @@ export default function DashboardScreen() {
 
             <Text style={styles.sectionTitle}>Costs</Text>
             <View style={styles.cardsFlush}>
-              <Link href={COSTS_CARD.href} asChild>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Costs. Track what your business spends"
-                  style={({ pressed }) => [
-                    styles.wideCard,
-                    pressed && styles.cardPressed,
-                  ]}>
-                  <Text style={styles.cardValue}>Costs</Text>
-                  <Text style={styles.cardLabel}>Track what your business spends</Text>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color="#6b7280"
-                    style={styles.wideCardChevron}
-                  />
-                </Pressable>
-              </Link>
+              <View style={styles.wideCard}>
+                <Link href={COSTS_CARD.href} asChild>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Costs. Track what your business spends"
+                    android_ripple={{ color: '#e5e7eb' }}>
+                    <Text style={styles.cardValue}>Costs</Text>
+                    <Text style={styles.cardLabel}>Track what your business spends</Text>
+                  </Pressable>
+                </Link>
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color="#6b7280"
+                  style={styles.wideCardChevron}
+                />
+              </View>
             </View>
 
             <View style={styles.divider} />
@@ -165,16 +163,15 @@ const styles = StyleSheet.create({
     paddingTop: 14,
   },
   card: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#ffffff',
     borderRadius: 10,
     padding: 12,
     width: '47.5%',
+    flexGrow: 0,
+    flexShrink: 0,
     gap: 2,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  cardPressed: {
-    opacity: 0.65,
+    borderColor: '#d1d5db',
   },
   cardValue: {
     fontSize: 24,
@@ -186,14 +183,16 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   wideCard: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#ffffff',
     borderRadius: 10,
     padding: 12,
     paddingRight: 36,
     width: '100%',
+    flexGrow: 0,
+    flexShrink: 0,
     gap: 2,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#d1d5db',
   },
   cardsFlush: {
     flexDirection: 'row',
