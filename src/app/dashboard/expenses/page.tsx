@@ -1,9 +1,9 @@
-import Link from "next/link"
-import { ChevronLeft, ChevronRight, Receipt } from "lucide-react"
+import { Receipt } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { formatCurrency } from "@/lib/utils"
 import { EXPENSE_CATEGORIES, isMonth, monthRange } from "@/lib/expenses"
 import type { Expense } from "@/types/database"
+import MonthSelect from "../month-select"
 import ExpenseForm from "./expense-form"
 import DeleteExpenseButton from "./delete-expense-button"
 
@@ -19,12 +19,6 @@ function monthLabel(month: string): string {
     year: "numeric",
     timeZone: "Europe/London",
   })
-}
-
-function shiftMonth(month: string, delta: number): string {
-  const [year, mon] = month.split("-").map(Number)
-  const date = new Date(Date.UTC(year, mon - 1 + delta, 1))
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`
 }
 
 function formatDate(value: string): string {
@@ -83,25 +77,7 @@ export default async function ExpensesPage({
           </p>
         </div>
 
-        <div className="flex items-center gap-1 rounded-md border border-border bg-card px-1 py-1">
-          <Link
-            href={`/dashboard/expenses?month=${shiftMonth(month, -1)}`}
-            aria-label="Previous month"
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Link>
-          <span className="min-w-32 text-center text-sm font-medium">
-            {monthLabel(month)}
-          </span>
-          <Link
-            href={`/dashboard/expenses?month=${shiftMonth(month, 1)}`}
-            aria-label="Next month"
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
+        <MonthSelect month={month} key={month} />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">

@@ -13,9 +13,10 @@ import {
   View,
 } from 'react-native';
 
+import { MonthPicker } from '@/components/month-picker';
 import { ScreenState } from '@/components/screen-state';
 import { api, useApi } from '@/lib/api';
-import { currentMonth, formatDate, formatMoney, monthLabel, shiftMonth } from '@/lib/format';
+import { currentMonth, formatDate, formatMoney, monthLabel } from '@/lib/format';
 import type { Expense } from '@/lib/types';
 
 const CATEGORIES = [
@@ -114,132 +115,125 @@ export default function CostsScreen() {
 
   return (
     <ScreenState loading={loading && !data} error={error} onRetry={refresh}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => setMonth(shiftMonth(month, -1))}
-          hitSlop={8}
-          accessibilityLabel="Previous month"
-          style={styles.navButton}>
-          <Ionicons name="chevron-back" size={18} color="#4f46e5" />
-        </Pressable>
-        <Text style={styles.monthLabel}>{monthLabel(month)}</Text>
-        <Pressable
-          onPress={() => setMonth(shiftMonth(month, 1))}
-          hitSlop={8}
-          accessibilityLabel="Next month"
-          style={styles.navButton}>
-          <Ionicons name="chevron-forward" size={18} color="#4f46e5" />
-        </Pressable>
-        <View style={styles.headerSpacer} />
-        <Pressable
-          onPress={() => setAdding((value) => !value)}
-          accessibilityLabel={adding ? 'Cancel' : 'Add expense'}
-          style={[styles.addButton, adding && styles.addButtonActive]}>
-          <Ionicons name={adding ? 'close' : 'add'} size={16} color="#ffffff" />
-          <Text style={styles.addButtonText}>{adding ? 'Cancel' : 'Add'}</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.totalCard}>
-        <Text style={styles.totalLabel}>Spent in {monthLabel(month)}</Text>
-        <Text style={styles.totalValue}>{formatMoney(total)}</Text>
-        <Text style={styles.totalSub}>
-          {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'} recorded
-        </Text>
-      </View>
-
-      {adding && (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={styles.form}>
-            {formError ? <Text style={styles.formError}>{formError}</Text> : null}
-
-            <TextInput
-              style={styles.input}
-              value={amount}
-              onChangeText={setAmount}
-              placeholder="Amount (£)"
-              keyboardType="decimal-pad"
-              autoFocus
-            />
-
-            <View style={styles.chips}>
-              {CATEGORIES.map((value) => {
-                const active = category === value;
-                return (
-                  <Pressable
-                    key={value}
-                    onPress={() => setCategory(value)}
-                    style={[styles.chip, active && styles.chipActive]}>
-                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{value}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <TextInput
-              style={styles.input}
-              value={category}
-              onChangeText={setCategory}
-              placeholder="Category — tap a chip or type your own"
-            />
-
-            <TextInput
-              style={styles.input}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Description (optional)"
-            />
-
-            <TextInput
-              style={styles.input}
-              value={date}
-              onChangeText={setDate}
-              placeholder="Date — YYYY-MM-DD"
-              keyboardType="numbers-and-punctuation"
-            />
-
-            <Pressable
-              onPress={submit}
-              disabled={saving}
-              style={[styles.saveButton, saving && styles.saveButtonDisabled]}>
-              <Text style={styles.saveText}>{saving ? 'Saving…' : 'Save expense'}</Text>
-            </Pressable>
-          </View>
-        </KeyboardAvoidingView>
-      )}
-
-      {offline ? <Text style={styles.offlineNote}>Offline — saved data</Text> : null}
-
-      <FlatList
-        data={expenses}
-        keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <View style={styles.main}>
-              <View style={styles.rowTop}>
-                <Text style={styles.category}>{item.category}</Text>
-                <Text style={styles.amount}>{formatMoney(item.amount)}</Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <FlatList
+          data={expenses}
+          keyExtractor={(item) => item.id}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
+          ListHeaderComponent={
+            <View>
+              <View style={styles.header}>
+                <MonthPicker value={month} onChange={setMonth} />
+                <View style={styles.headerSpacer} />
+                <Pressable
+                  onPress={() => setAdding((value) => !value)}
+                  accessibilityLabel={adding ? 'Cancel' : 'Add expense'}
+                  style={[styles.addButton, adding && styles.addButtonActive]}>
+                  <Ionicons name={adding ? 'close' : 'add'} size={16} color="#ffffff" />
+                  <Text style={styles.addButtonText}>{adding ? 'Cancel' : 'Add'}</Text>
+                </Pressable>
               </View>
-              <Text style={styles.sub} numberOfLines={1}>
-                {formatDate(item.incurred_on)}
-                {item.description ? ` · ${item.description}` : ''}
-              </Text>
+
+              <View style={styles.totalCard}>
+                <Text style={styles.totalLabel}>Spent in {monthLabel(month)}</Text>
+                <Text style={styles.totalValue}>{formatMoney(total)}</Text>
+                <Text style={styles.totalSub}>
+                  {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'} recorded
+                </Text>
+              </View>
+
+              {adding && (
+                <View style={styles.form}>
+                  {formError ? <Text style={styles.formError}>{formError}</Text> : null}
+
+                  <TextInput
+                    style={styles.input}
+                    value={amount}
+                    onChangeText={setAmount}
+                    placeholder="Amount (£)"
+                    keyboardType="decimal-pad"
+                    autoFocus
+                  />
+
+                  <View style={styles.chips}>
+                    {CATEGORIES.map((value) => {
+                      const active = category === value;
+                      return (
+                        <Pressable
+                          key={value}
+                          onPress={() => setCategory(value)}
+                          style={[styles.chip, active && styles.chipActive]}>
+                          <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                            {value}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+
+                  <TextInput
+                    style={styles.input}
+                    value={category}
+                    onChangeText={setCategory}
+                    placeholder="Category — tap a chip or type your own"
+                  />
+
+                  <TextInput
+                    style={styles.input}
+                    value={description}
+                    onChangeText={setDescription}
+                    placeholder="Description (optional)"
+                  />
+
+                  <TextInput
+                    style={styles.input}
+                    value={date}
+                    onChangeText={setDate}
+                    placeholder="Date — YYYY-MM-DD"
+                    keyboardType="numbers-and-punctuation"
+                  />
+
+                  <Pressable
+                    onPress={submit}
+                    disabled={saving}
+                    style={[styles.saveButton, saving && styles.saveButtonDisabled]}>
+                    <Text style={styles.saveText}>{saving ? 'Saving…' : 'Save expense'}</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {offline ? <Text style={styles.offlineNote}>Offline — saved data</Text> : null}
             </View>
-            <Pressable
-              onPress={() => remove(item.id)}
-              hitSlop={8}
-              accessibilityLabel="Delete expense">
-              <Ionicons name="trash-outline" size={18} color="#9ca3af" />
-            </Pressable>
-          </View>
-        )}
-        ListEmptyComponent={
-          loading ? null : (
-            <Text style={styles.empty}>No expenses for {monthLabel(month)} yet</Text>
-          )
-        }
-      />
+          }
+          renderItem={({ item }) => (
+            <View style={styles.row}>
+              <View style={styles.main}>
+                <View style={styles.rowTop}>
+                  <Text style={styles.category}>{item.category}</Text>
+                  <Text style={styles.amount}>{formatMoney(item.amount)}</Text>
+                </View>
+                <Text style={styles.sub} numberOfLines={1}>
+                  {formatDate(item.incurred_on)}
+                  {item.description ? ` · ${item.description}` : ''}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => remove(item.id)}
+                hitSlop={8}
+                accessibilityLabel="Delete expense">
+                <Ionicons name="trash-outline" size={18} color="#9ca3af" />
+              </Pressable>
+            </View>
+          )}
+          ListEmptyComponent={
+            loading ? null : (
+              <Text style={styles.empty}>No expenses for {monthLabel(month)} yet</Text>
+            )
+          }
+        />
+      </KeyboardAvoidingView>
     </ScreenState>
   );
 }
@@ -251,15 +245,6 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingTop: 10,
-  },
-  navButton: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-  },
-  monthLabel: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
   },
   headerSpacer: {
     flex: 1,

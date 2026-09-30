@@ -1,10 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
+import { MonthPicker } from '@/components/month-picker';
 import { ScreenState } from '@/components/screen-state';
 import { useApi } from '@/lib/api';
-import { currentMonth, formatMoney, monthLabel, shiftMonth } from '@/lib/format';
+import { currentMonth, formatMoney, monthLabel } from '@/lib/format';
 import type { SalesReport } from '@/lib/types';
 
 export default function ReportsScreen() {
@@ -25,19 +25,7 @@ export default function ReportsScreen() {
         ListHeaderComponent={
           <View>
             <View style={styles.monthNav}>
-              <Pressable
-                hitSlop={10}
-                onPress={() => setMonth((m) => shiftMonth(m, -1))}
-                style={styles.monthButton}>
-                <Ionicons name="chevron-back" size={20} color="#4f46e5" />
-              </Pressable>
-              <Text style={styles.monthLabel}>{monthLabel(month)}</Text>
-              <Pressable
-                hitSlop={10}
-                onPress={() => setMonth((m) => shiftMonth(m, 1))}
-                style={styles.monthButton}>
-                <Ionicons name="chevron-forward" size={20} color="#4f46e5" />
-              </Pressable>
+              <MonthPicker value={month} onChange={setMonth} />
             </View>
             {offline && <Text style={styles.offlineNote}>Offline — saved data</Text>}
             <View style={styles.cards}>
@@ -91,14 +79,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 12,
-  },
-  monthButton: {
-    padding: 6,
-  },
-  monthLabel: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
   },
   offlineNote: {
     backgroundColor: '#fef2f2',
