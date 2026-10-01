@@ -13,7 +13,7 @@ import {
   type InvoicePatch,
 } from "@/lib/documents"
 import { checkEditGate } from "@/lib/subscription"
-import { isSuperAdmin } from "@/lib/admin"
+import { hasSuperAdminPrivilege } from "@/lib/impersonation"
 import type { InvoiceStatus } from "@/types/database"
 
 async function getSession() {
@@ -83,7 +83,7 @@ export async function updateInvoice(id: string, formData: FormData) {
   const rawInvoiceDate = formData.get("invoice_date")
   const invoiceDate = typeof rawInvoiceDate === "string" ? rawInvoiceDate : ""
   if (invoiceDate) {
-    if (!isSuperAdmin(user.email)) {
+    if (!(await hasSuperAdminPrivilege(user))) {
       redirect(
         `/dashboard/invoices/${id}/edit?error=${encodeURIComponent("Only the super admin can change the invoice date.")}`
       )

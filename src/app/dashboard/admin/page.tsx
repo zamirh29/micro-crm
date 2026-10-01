@@ -1,14 +1,19 @@
 import { redirect } from "next/navigation"
-import { ShieldCheck, BadgeCheck } from "lucide-react"
+import { ShieldCheck, BadgeCheck, LogIn } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { isSuperAdmin } from "@/lib/admin"
-import { setCustomerPlan } from "./actions"
+import { setCustomerPlan, openAccount } from "./actions"
 import { formatDate } from "@/lib/utils"
 
 export const dynamic = "force-dynamic"
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
+  const sp = await searchParams
   const supabase = await createClient()
   const {
     data: { user },
@@ -61,9 +66,16 @@ export default async function AdminPage() {
           Super Admin
         </h1>
         <p className="text-sm text-muted-foreground">
-          Activate or revert Pro for customers without payment.
+          Open a customer&apos;s account to work directly in it, or activate or
+          revert Pro for customers without payment.
         </p>
       </div>
+
+      {sp.error && (
+        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+          {sp.error}
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-lg border border-border">
         <div className="overflow-x-auto">
@@ -107,37 +119,55 @@ export default async function AdminPage() {
                     {row.createdAt ? formatDate(row.createdAt) : "—"}
                   </td>
                   <td className="px-4 py-3">
-                    {row.isPro ? (
-                      <form action={setCustomerPlan}>
-                        <input
-                          type="hidden"
-                          name="userId"
-                          value={row.userId}
-                        />
-                        <input type="hidden" name="action" value="revert" />
-                        <button
-                          type="submit"
-                          className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
-                        >
-                          Revert to Free
-                        </button>
-                      </form>
-                    ) : (
-                      <form action={setCustomerPlan}>
-                        <input
-                          type="hidden"
-                          name="userId"
-                          value={row.userId}
-                        />
-                        <input type="hidden" name="action" value="activate" />
-                        <button
-                          type="submit"
-                          className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-                        >
-                          Activate Pro
-                        </button>
-                      </form>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {row.userId !== user.id && (
+                        <form action={openAccount}>
+                          <input
+                            type="hidden"
+                            name="userId"
+                            value={row.userId}
+                          />
+                          <button
+                            type="submit"
+                            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                          >
+                            <LogIn className="h-3 w-3" />
+                            Open account
+                          </button>
+                        </form>
+                      )}
+                      {row.isPro ? (
+                        <form action={setCustomerPlan}>
+                          <input
+                            type="hidden"
+                            name="userId"
+                            value={row.userId}
+                          />
+                          <input type="hidden" name="action" value="revert" />
+                          <button
+                            type="submit"
+                            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                          >
+                            Revert to Free
+                          </button>
+                        </form>
+                      ) : (
+                        <form action={setCustomerPlan}>
+                          <input
+                            type="hidden"
+                            name="userId"
+                            value={row.userId}
+                          />
+                          <input type="hidden" name="action" value="activate" />
+                          <button
+                            type="submit"
+                            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                          >
+                            Activate Pro
+                          </button>
+                        </form>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

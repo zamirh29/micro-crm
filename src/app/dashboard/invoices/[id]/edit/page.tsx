@@ -4,7 +4,7 @@ import { Lock } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { getCompanyProfile } from "@/lib/company"
 import { checkEditGate } from "@/lib/subscription"
-import { isSuperAdmin } from "@/lib/admin"
+import { hasSuperAdminPrivilege } from "@/lib/impersonation"
 import ProGate from "@/components/pro-gate"
 import type { InvoiceItem } from "@/types/database"
 import InvoiceForm from "../../new/invoice-form"
@@ -109,7 +109,7 @@ export default async function EditInvoicePage({
       }))}
       error={sp.error ?? null}
       invoice_date={invoiceDate}
-      canEditDate={isSuperAdmin(user.email)}
+      canEditDate={await hasSuperAdminPrivilege(user)}
     />
   )
 }

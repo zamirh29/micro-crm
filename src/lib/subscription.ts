@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { isSuperAdmin } from "@/lib/admin"
+import { hasSuperAdminPrivilege } from "@/lib/impersonation"
 
 type SubRow = { status: string | null; plan: string | null } | null
 
@@ -30,7 +30,7 @@ export async function canEditDocuments(
   supabase: SupabaseClient,
   user: EditUser
 ): Promise<boolean> {
-  if (isSuperAdmin(user.email)) return true
+  if (await hasSuperAdminPrivilege(user)) return true
   return isProSubscription(await getSubscription(supabase, user.id))
 }
 
@@ -47,7 +47,7 @@ export async function checkEditGate(
       status: 403,
     }
   }
-  if (document.status === "paid" && !isSuperAdmin(user.email)) {
+  if (document.status === "paid" && !(await hasSuperAdminPrivilege(user))) {
     return {
       ok: false,
       message:

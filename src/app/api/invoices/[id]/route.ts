@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { requireApiUser } from "@/lib/api-auth"
-import { isSuperAdmin } from "@/lib/admin"
+import { hasSuperAdminPrivilege } from "@/lib/impersonation"
 import { jsonError, readJson, errorFromThrown } from "@/lib/api-utils"
 import { updateInvoiceRecord, deleteInvoiceRecord } from "@/lib/documents"
 import { checkEditGate } from "@/lib/subscription"
@@ -57,7 +57,7 @@ export async function GET(
   return NextResponse.json({
     invoice,
     can_edit: gate.ok,
-    can_edit_date: isSuperAdmin(auth.user.email),
+    can_edit_date: await hasSuperAdminPrivilege(auth.user),
     edit_block: gate.ok ? null : gate.status === 403 ? "plan" : "paid",
   })
 }
@@ -89,7 +89,7 @@ export async function PATCH(
 
   const { invoice_date: invoiceDate, ...patch } = parsed.data
 
-  if (invoiceDate && !isSuperAdmin(auth.user.email)) {
+  if (invoiceDate && !(await hasSuperAdminPrivilege(auth.user))) {
     return jsonError("Only the super admin can change the invoice date", 403)
   }
 

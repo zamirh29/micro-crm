@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { getImpersonation } from "@/lib/impersonation"
 
 export const FREE_TRIAL_DAYS = 90
 export const FREE_QUOTES_PER_MONTH = 20
@@ -15,6 +16,9 @@ export async function assertDocumentCreationAllowed(opts: {
   type: DocType
 }) {
   const { supabase, userId, orgId, type } = opts
+
+  const impersonation = await getImpersonation()
+  if (impersonation?.userId === userId) return
 
   const { data: subscription } = await supabase
     .from("subscriptions")
