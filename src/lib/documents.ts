@@ -553,23 +553,9 @@ export async function convertQuoteToInvoiceRecord(
     type: "invoice",
   })
 
-  const { data: maxInvoice } = await supabase
-    .from("invoices")
-    .select("number")
-    .eq("org_id", quote.org_id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  let nextSequence = 100001
-  if (maxInvoice?.number) {
-    const match = maxInvoice.number.match(/INV-(\d+)/)
-    if (match) {
-      nextSequence = Math.max(100001, parseInt(match[1], 10) + 1)
-    }
-  }
-
-  const number = generateInvoiceNumber(nextSequence)
+  const number = generateInvoiceNumber(
+    await nextInvoiceSequence(supabase, quote.org_id, 200001)
+  )
 
   const { data: invoice, error } = await supabase
     .from("invoices")
@@ -638,24 +624,30 @@ export async function convertQuoteToInvoiceRecord(
 // Invoices
 // ---------------------------------------------------------------------------
 
-async function nextInvoiceNumber(supabase: SupabaseClient, orgId: string) {
-  const { data: maxInvoice } = await supabase
+async function nextInvoiceSequence(
+  supabase: SupabaseClient,
+  orgId: string,
+  floor: number
+) {
+  const { data: recent } = await supabase
     .from("invoices")
     .select("number")
     .eq("org_id", orgId)
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle()
+    .limit(500)
 
-  let nextSequence = 100001
-  if (maxInvoice?.number) {
-    const match = maxInvoice.number.match(/INV-(\d+)/)
-    if (match) {
-      nextSequence = Math.max(100001, parseInt(match[1], 10) + 1)
-    }
+  let highest = floor - 1
+  for (const row of recent ?? []) {
+    const match = row.number?.match(/INV-(\d+)/)
+    if (!match) continue
+    highest = Math.max(highest, parseInt(match[1], 10))
   }
 
-  return generateInvoiceNumber(nextSequence)
+  return Math.max(floor, highest + 1)
+}
+
+async function nextInvoiceNumber(supabase: SupabaseClient, orgId: string) {
+  return generateInvoiceNumber(await nextInvoiceSequence(supabase, orgId, 100001))
 }
 
 export interface InvoiceInput {

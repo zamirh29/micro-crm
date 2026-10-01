@@ -10,16 +10,21 @@ import { formatDate, formatMoney } from '@/lib/format';
 import { sharePdf } from '@/lib/share-pdf';
 import type { Quote } from '@/lib/types';
 
+type EditBlock = 'plan' | 'paid' | null;
+
 export default function QuoteDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
   const [busy, setBusy] = useState<string | null>(null);
-  const { data, loading, error, refresh } = useApi<{ quote: Quote; can_edit: boolean }>(
-    id ? `/api/quotes/${id}` : null,
-    `cache:quote:${id}`
-  );
+  const { data, loading, error, refresh } = useApi<{
+    quote: Quote;
+    can_edit: boolean;
+    can_edit_date: boolean;
+    edit_block: EditBlock;
+  }>(id ? `/api/quotes/${id}` : null, `cache:quote:${id}`);
   const quote = data?.quote;
   const canEdit = data?.can_edit === true;
+  const editBlock = data?.edit_block ?? null;
 
   // Re-read the quote whenever the screen regains focus so edits made on the
   // edit screen (or on the web) are reflected here.
@@ -36,10 +41,17 @@ export default function QuoteDetailScreen() {
 
   const edit = () => {
     if (!canEdit) {
-      Alert.alert(
-        'Pro feature',
-        'Editing invoices and quotes is a Pro feature. Upgrade at crm.dtmstechsolutions.co.uk'
-      );
+      if (editBlock === 'paid') {
+        Alert.alert(
+          'Paid invoice',
+          'Paid invoices are locked. Only the account owner (super admin) can edit them.'
+        );
+      } else {
+        Alert.alert(
+          'Pro feature',
+          'Editing invoices and quotes is a Pro feature. Upgrade at crm.dtmstechsolutions.co.uk'
+        );
+      }
       return;
     }
     router.push(`/quote/edit/${id}`);

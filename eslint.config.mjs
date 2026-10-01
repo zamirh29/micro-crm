@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "mobile/**",
     // Node script that generates brand assets (own tooling):
     "brand/**",
+    // Scratch Playwright/DB verification scripts (not part of the app):
+    "pw-repro/**",
   ]),
 ]);
 

@@ -4,6 +4,7 @@ import { Lock } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { getCompanyProfile } from "@/lib/company"
 import { checkEditGate } from "@/lib/subscription"
+import { isSuperAdmin } from "@/lib/admin"
 import ProGate from "@/components/pro-gate"
 import type { InvoiceItem } from "@/types/database"
 import InvoiceForm from "../../new/invoice-form"
@@ -86,6 +87,7 @@ export default async function EditInvoicePage({
   }
 
   const invoiceItems = (invoice.invoice_items ?? []) as InvoiceItem[]
+  const invoiceDate = invoice.created_at.slice(0, 10)
 
   return (
     <InvoiceForm
@@ -106,6 +108,8 @@ export default async function EditInvoicePage({
         unit_price: item.unit_price,
       }))}
       error={sp.error ?? null}
+      invoice_date={invoiceDate}
+      canEditDate={isSuperAdmin(user.email)}
     />
   )
 }

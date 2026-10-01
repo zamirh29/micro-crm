@@ -8,6 +8,7 @@ import {
   Download,
   Pencil,
   Crown,
+  Lock,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { formatCurrency, formatDate, cn } from "@/lib/utils"
@@ -165,13 +166,22 @@ export default async function InvoiceDetailPage({
               <Pencil className="h-4 w-4" />
               Edit
             </Link>
-          ) : (
+          ) : editGate.status === 403 ? (
             <Link
               href="/dashboard/billing"
               className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
             >
               <Crown className="h-4 w-4 text-primary" />
               Upgrade to edit
+            </Link>
+          ) : (
+            <Link
+              href={`/dashboard/invoices/${invoice.id}/edit`}
+              title="Paid invoices can only be edited by the account owner"
+              className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
+            >
+              <Lock className="h-4 w-4" />
+              Paid — locked
             </Link>
           )}
           <form action={deleteInvoice.bind(null, invoice.id)}>
@@ -279,7 +289,7 @@ export default async function InvoiceDetailPage({
             <h2 className="text-lg font-semibold mb-4">Details</h2>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Created</dt>
+                <dt className="text-muted-foreground">Invoice date</dt>
                 <dd>{formatDate(invoice.created_at)}</dd>
               </div>
               <div className="flex justify-between">

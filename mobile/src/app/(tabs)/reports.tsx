@@ -1,17 +1,34 @@
-import { useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { MonthPicker } from '@/components/month-picker';
 import { ScreenState } from '@/components/screen-state';
+import { YearPicker } from '@/components/year-picker';
 import { useApi } from '@/lib/api';
 import { currentMonth, formatMoney, monthLabel } from '@/lib/format';
 import type { SalesReport } from '@/lib/types';
 
+type Mode = 'month' | 'year';
+
 export default function ReportsScreen() {
+  const [mode, setMode] = useState<Mode>('month');
   const [month, setMonth] = useState(currentMonth());
+  const [year, setYear] = useState(() => String(new Date().getFullYear()));
+
+  const query = useMemo(
+    () =>
+      mode === 'month'
+        ? { path: `/api/reports/sales?month=${month}`, cacheKey: `cache:sales:${month}` }
+        : {
+            path: `/api/reports/sales?from=${year}-01-01&to=${year}-12-31`,
+            cacheKey: `cache:sales:year:${year}`,
+          },
+    [mode, month, year]
+  );
+
   const { data, loading, error, offline, refresh } = useApi<SalesReport>(
-    `/api/reports/sales?month=${month}`,
-    `cache:sales:${month}`
+    query.path,
+    query.cacheKey
   );
 
   const totals = data?.totals;
@@ -24,8 +41,32 @@ export default function ReportsScreen() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
         ListHeaderComponent={
           <View>
+            <View style={styles.modeWrap}>
+              <View style={styles.segmentGroup}>
+                {MODES.map((option) => {
+                  const active = mode === option.value;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => setMode(option.value)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${option.label} view`}
+                      accessibilityState={{ selected: active }}
+                      style={[styles.segment, active && styles.segmentActive]}>
+                      <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
             <View style={styles.monthNav}>
-              <MonthPicker value={month} onChange={setMonth} />
+              {mode === 'month' ? (
+                <MonthPicker value={month} onChange={setMonth} />
+              ) : (
+                <YearPicker value={year} onChange={setYear} />
+              )}
             </View>
             {offline && <Text style={styles.offlineNote}>Offline — saved data</Text>}
             <View style={styles.cards}>
@@ -56,7 +97,11 @@ export default function ReportsScreen() {
           </View>
         )}
         ListEmptyComponent={
-          loading ? null : <Text style={styles.empty}>No sales for {monthLabel(month)}</Text>
+          loading ? null : (
+            <Text style={styles.empty}>
+              No sales for {mode === 'month' ? monthLabel(month) : year}
+            </Text>
+          )
         }
       />
     </ScreenState>
@@ -72,7 +117,40 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
+const MODES: { value: Mode; label: string }[] = [
+  { value: 'month', label: 'Monthly' },
+  { value: 'year', label: 'Yearly' },
+];
+
 const styles = StyleSheet.create({
+  modeWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  segmentGroup: {
+    flexDirection: 'row',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 10,
+    padding: 3,
+  },
+  segment: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 9,
+    borderRadius: 8,
+  },
+  segmentActive: {
+    backgroundColor: '#4f46e5',
+  },
+  segmentText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  segmentTextActive: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',

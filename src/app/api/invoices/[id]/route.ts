@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { requireApiUser } from "@/lib/api-auth"
+import { isSuperAdmin } from "@/lib/admin"
 import { jsonError, readJson, errorFromThrown } from "@/lib/api-utils"
 import { updateInvoiceRecord, deleteInvoiceRecord } from "@/lib/documents"
 import { checkEditGate } from "@/lib/subscription"
@@ -23,6 +24,10 @@ const patchSchema = z.object({
     .nullish(),
   status: z.enum(["draft", "sent", "paid", "overdue"]).optional(),
   currency: z.string().min(1).optional(),
+  invoice_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "invoice_date must be YYYY-MM-DD")
+    .optional(),
   items: z.array(lineItemSchema).min(1, "At least one line item is required").optional(),
 })
 
@@ -49,7 +54,12 @@ export async function GET(
     status: invoice.status as string | null,
   })
 
-  return NextResponse.json({ invoice, can_edit: gate.ok })
+  return NextResponse.json({
+    invoice,
+    can_edit: gate.ok,
+    can_edit_date: isSuperAdmin(auth.user.email),
+    edit_block: gate.ok ? null : gate.status === 403 ? "plan" : "paid",
+  })
 }
 
 export async function PATCH(
@@ -77,14 +87,29 @@ export async function PATCH(
   const parsed = await readJson(request, patchSchema)
   if (!parsed.ok) return parsed.response
 
+  const { invoice_date: invoiceDate, ...patch } = parsed.data
+
+  if (invoiceDate && !isSuperAdmin(auth.user.email)) {
+    return jsonError("Only the super admin can change the invoice date", 403)
+  }
+
   try {
     const invoice = await updateInvoiceRecord(auth.supabase, {
       orgId: auth.orgId,
       userId: auth.user.id,
       id,
-      input: parsed.data,
+      input: patch,
     })
     if (!invoice) return jsonError("Invoice not found", 404)
+
+    if (invoiceDate) {
+      await auth.supabase
+        .from("invoices")
+        .update({ created_at: `${invoiceDate}T12:00:00.000Z` })
+        .eq("id", id)
+        .eq("org_id", auth.orgId)
+    }
+
     return NextResponse.json({ invoice })
   } catch (err) {
     return errorFromThrown(err)

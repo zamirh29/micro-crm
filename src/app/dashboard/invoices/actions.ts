@@ -13,6 +13,7 @@ import {
   type InvoicePatch,
 } from "@/lib/documents"
 import { checkEditGate } from "@/lib/subscription"
+import { isSuperAdmin } from "@/lib/admin"
 import type { InvoiceStatus } from "@/types/database"
 
 async function getSession() {
@@ -79,6 +80,21 @@ export async function updateInvoice(id: string, formData: FormData) {
     redirect(`/dashboard/invoices/${id}/edit?error=${encodeURIComponent(gate.message)}`)
   }
 
+  const rawInvoiceDate = formData.get("invoice_date")
+  const invoiceDate = typeof rawInvoiceDate === "string" ? rawInvoiceDate : ""
+  if (invoiceDate) {
+    if (!isSuperAdmin(user.email)) {
+      redirect(
+        `/dashboard/invoices/${id}/edit?error=${encodeURIComponent("Only the super admin can change the invoice date.")}`
+      )
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(invoiceDate)) {
+      redirect(
+        `/dashboard/invoices/${id}/edit?error=${encodeURIComponent("Invoice date must be YYYY-MM-DD")}`
+      )
+    }
+  }
+
   const items = JSON.parse(formData.get("items") as string) as LineItemInput[]
 
   const rawStatus = formData.get("status")
@@ -102,6 +118,14 @@ export async function updateInvoice(id: string, formData: FormData) {
     id,
     input,
   })
+
+  if (invoiceDate) {
+    await supabase
+      .from("invoices")
+      .update({ created_at: `${invoiceDate}T12:00:00.000Z` })
+      .eq("id", id)
+      .eq("org_id", orgId)
+  }
 
   revalidatePath("/dashboard/invoices")
   revalidatePath(`/dashboard/invoices/${id}`)

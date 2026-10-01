@@ -27,6 +27,8 @@ interface InvoiceFormProps {
   }
   items?: LineItem[]
   error?: string | null
+  invoice_date?: string
+  canEditDate?: boolean
 }
 
 function formatPence(amount: number, symbol: string): string {
@@ -42,9 +44,12 @@ export default function InvoiceForm({
   invoice,
   items: initialItems,
   error: serverError,
+  invoice_date,
+  canEditDate,
 }: InvoiceFormProps) {
   const router = useRouter()
   const isEdit = Boolean(invoice)
+  const showInvoiceDate = Boolean(invoice) && Boolean(canEditDate)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -58,6 +63,8 @@ export default function InvoiceForm({
     currency:
       invoice?.currency || defaultCurrency || DEFAULT_COMPANY.currency,
   })
+
+  const [invoiceDate, setInvoiceDate] = useState(invoice_date ?? "")
 
   const [items, setItems] = useState<LineItem[]>(
     isEdit
@@ -114,6 +121,7 @@ export default function InvoiceForm({
       fd.set("notes", form.notes)
       fd.set("due_date", form.due_date)
       fd.set("currency", form.currency)
+      if (showInvoiceDate && invoiceDate) fd.set("invoice_date", invoiceDate)
       fd.set("items", JSON.stringify(items))
 
       if (invoice) {
@@ -180,6 +188,28 @@ export default function InvoiceForm({
                 className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
+
+            {showInvoiceDate && (
+              <div>
+                <label
+                  htmlFor="invoice_date"
+                  className="block text-sm font-medium text-foreground"
+                >
+                  Invoice date
+                </label>
+                <input
+                  id="invoice_date"
+                  type="date"
+                  value={invoiceDate}
+                  onChange={(e) => setInvoiceDate(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  The date shown on the invoice. Leave as-is unless correcting a
+                  historical document.
+                </p>
+              </div>
+            )}
 
             <div>
               <label

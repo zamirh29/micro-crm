@@ -49,6 +49,8 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const PAGE_OPTIONS = { title: 'Edit invoice' };
 
+type EditBlock = 'plan' | 'paid' | null;
+
 type Form = {
   contact_id: string;
   title: string;
@@ -56,6 +58,7 @@ type Form = {
   tax_rate: string;
   notes: string;
   due_date: string;
+  invoice_date: string;
   currency: string;
 };
 
@@ -64,12 +67,16 @@ type Item = { key: string; description: string; quantity: string; unit_price: st
 export default function InvoiceEditScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
-  const { data, loading, error, refresh } = useApi<{ invoice: Invoice; can_edit: boolean }>(
-    id ? `/api/invoices/${id}` : null,
-    `cache:invoice:${id}`
-  );
+  const { data, loading, error, refresh } = useApi<{
+    invoice: Invoice;
+    can_edit: boolean;
+    can_edit_date: boolean;
+    edit_block: EditBlock;
+  }>(id ? `/api/invoices/${id}` : null, `cache:invoice:${id}`);
   const invoice = data?.invoice;
   const canEdit = data?.can_edit === true;
+  const canEditDate = data?.can_edit_date === true;
+  const editBlock = data?.edit_block ?? null;
 
   return (
     <>
@@ -82,18 +89,30 @@ export default function InvoiceEditScreen() {
           />
         ) : !canEdit ? (
           <Notice
-            title="This invoice cannot be edited"
-            body="Editing invoices and quotes is a Pro feature. Upgrade at crm.dtmstechsolutions.co.uk to make changes after an invoice has been created."
+            title={editBlock === 'paid' ? 'Paid invoice' : 'This invoice cannot be edited'}
+            body={
+              editBlock === 'paid'
+                ? 'Paid invoices are locked. Only the account owner (super admin) can edit them.'
+                : 'Editing invoices and quotes is a Pro feature. Upgrade at crm.dtmstechsolutions.co.uk to make changes after an invoice has been created.'
+            }
           />
         ) : (
-          <InvoiceEditForm key={id} id={id} invoice={invoice} />
+          <InvoiceEditForm key={id} id={id} invoice={invoice} canEditDate={canEditDate} />
         )}
       </ScreenState>
     </>
   );
 }
 
-function InvoiceEditForm({ id, invoice }: { id: string; invoice: Invoice }) {
+function InvoiceEditForm({
+  id,
+  invoice,
+  canEditDate,
+}: {
+  id: string;
+  invoice: Invoice;
+  canEditDate: boolean;
+}) {
   const [form, setForm] = useState<Form>(() => seedForm(invoice));
   const [items, setItems] = useState<Item[]>(() => seedItems(invoice));
   const [saving, setSaving] = useState(false);
@@ -158,7 +177,7 @@ function InvoiceEditForm({ id, invoice }: { id: string; invoice: Invoice }) {
 
   async function save() {
     if (saving) return;
-    const validationError = validate(form, items);
+    const validationError = validate(form, items, canEditDate);
     if (validationError) {
       setFormError(validationError);
       return;
@@ -181,6 +200,10 @@ function InvoiceEditForm({ id, invoice }: { id: string; invoice: Invoice }) {
         })),
       };
       body.due_date = form.due_date.trim() || null;
+      if (canEditDate) {
+        const invoiceDate = form.invoice_date.trim();
+        if (invoiceDate) body.invoice_date = invoiceDate;
+      }
 
       await api(`/api/invoices/${id}`, { method: 'PATCH', body });
       await AsyncStorage.removeItem(`cache:invoice:${id}`).catch(() => {});
@@ -273,6 +296,20 @@ function InvoiceEditForm({ id, invoice }: { id: string; invoice: Invoice }) {
                 keyboardType="numbers-and-punctuation"
               />
             </Field>
+
+            {canEditDate ? (
+              <Field
+                label="Invoice date"
+                hint="The date shown on the invoice (historical documents only)">
+                <TextInput
+                  style={styles.input}
+                  value={form.invoice_date}
+                  onChangeText={(value) => update('invoice_date', value)}
+                  placeholder="YYYY-MM-DD"
+                  keyboardType="numbers-and-punctuation"
+                />
+              </Field>
+            ) : null}
 
             <Field label="Currency">
               <Pressable
@@ -551,6 +588,7 @@ function seedForm(invoice: Invoice): Form {
       : String(invoice.tax_rate),
     notes: invoice.notes ?? '',
     due_date: invoice.due_date ?? '',
+    invoice_date: invoice.created_at.slice(0, 10),
     currency: invoice.currency || 'GBP',
   };
 }
@@ -568,11 +606,15 @@ function seedItems(invoice: Invoice): Item[] {
   }));
 }
 
-function validate(form: Form, items: Item[]): string | null {
+function validate(form: Form, items: Item[], canEditDate: boolean): string | null {
   if (!form.contact_id) return 'Choose a customer';
   if (!form.title.trim()) return 'Title is required';
   const dueDate = form.due_date.trim();
   if (dueDate && !DATE_RE.test(dueDate)) return 'Due date must be YYYY-MM-DD';
+  if (canEditDate) {
+    const invoiceDate = form.invoice_date.trim();
+    if (invoiceDate && !DATE_RE.test(invoiceDate)) return 'Invoice date must be YYYY-MM-DD';
+  }
   const tax = Number.parseFloat(form.tax_rate || '0');
   if (!Number.isFinite(tax) || tax < 0 || tax > 100) return 'Tax rate must be between 0 and 100';
   if (items.length === 0) return 'Add at least one line item';

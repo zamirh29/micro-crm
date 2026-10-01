@@ -49,6 +49,8 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const PAGE_OPTIONS = { title: 'Edit quote' };
 
+type EditBlock = 'plan' | 'paid' | null;
+
 type Form = {
   contact_id: string;
   title: string;
@@ -63,12 +65,15 @@ type Item = { key: string; description: string; quantity: string; unit_price: st
 export default function QuoteEditScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
-  const { data, loading, error, refresh } = useApi<{ quote: Quote; can_edit: boolean }>(
-    id ? `/api/quotes/${id}` : null,
-    `cache:quote:${id}`
-  );
+  const { data, loading, error, refresh } = useApi<{
+    quote: Quote;
+    can_edit: boolean;
+    can_edit_date: boolean;
+    edit_block: EditBlock;
+  }>(id ? `/api/quotes/${id}` : null, `cache:quote:${id}`);
   const quote = data?.quote;
   const canEdit = data?.can_edit === true;
+  const editBlock = data?.edit_block ?? null;
 
   return (
     <>
@@ -81,8 +86,12 @@ export default function QuoteEditScreen() {
           />
         ) : !canEdit ? (
           <Notice
-            title="This quote cannot be edited"
-            body="Editing invoices and quotes is a Pro feature. Upgrade at crm.dtmstechsolutions.co.uk to make changes after a quote has been created."
+            title={editBlock === 'paid' ? 'Paid quote' : 'This quote cannot be edited'}
+            body={
+              editBlock === 'paid'
+                ? 'Paid invoices are locked. Only the account owner (super admin) can edit them.'
+                : 'Editing invoices and quotes is a Pro feature. Upgrade at crm.dtmstechsolutions.co.uk to make changes after a quote has been created.'
+            }
           />
         ) : (
           <QuoteEditForm key={id} id={id} quote={quote} />

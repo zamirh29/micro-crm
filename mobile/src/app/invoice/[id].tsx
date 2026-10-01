@@ -10,16 +10,21 @@ import { formatDate, formatMoney } from '@/lib/format';
 import { sharePdf } from '@/lib/share-pdf';
 import type { Invoice } from '@/lib/types';
 
+type EditBlock = 'plan' | 'paid' | null;
+
 export default function InvoiceDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
   const [busy, setBusy] = useState<string | null>(null);
-  const { data, loading, error, refresh } = useApi<{ invoice: Invoice; can_edit: boolean }>(
-    id ? `/api/invoices/${id}` : null,
-    `cache:invoice:${id}`
-  );
+  const { data, loading, error, refresh } = useApi<{
+    invoice: Invoice;
+    can_edit: boolean;
+    can_edit_date: boolean;
+    edit_block: EditBlock;
+  }>(id ? `/api/invoices/${id}` : null, `cache:invoice:${id}`);
   const invoice = data?.invoice;
   const canEdit = data?.can_edit === true;
+  const editBlock = data?.edit_block ?? null;
 
   // Re-read the invoice whenever the screen regains focus so edits made on the
   // edit screen (or on the web) are reflected here.
@@ -36,10 +41,17 @@ export default function InvoiceDetailScreen() {
 
   const edit = () => {
     if (!canEdit) {
-      Alert.alert(
-        'Pro feature',
-        'Editing invoices and quotes is a Pro feature. Upgrade at crm.dtmstechsolutions.co.uk'
-      );
+      if (editBlock === 'paid') {
+        Alert.alert(
+          'Paid invoice',
+          'Paid invoices are locked. Only the account owner (super admin) can edit them.'
+        );
+      } else {
+        Alert.alert(
+          'Pro feature',
+          'Editing invoices and quotes is a Pro feature. Upgrade at crm.dtmstechsolutions.co.uk'
+        );
+      }
       return;
     }
     router.push(`/invoice/edit/${id}`);
@@ -89,7 +101,7 @@ export default function InvoiceDetailScreen() {
               <Row label="Customer" value={customerName(invoice)} />
               {invoice.contacts?.company ? <Row label="Company" value={invoice.contacts.company} /> : null}
               {invoice.contacts?.email ? <Row label="Email" value={invoice.contacts.email} /> : null}
-              <Row label="Created" value={formatDate(invoice.created_at)} />
+              <Row label="Invoice date" value={formatDate(invoice.created_at)} />
               {invoice.due_date ? <Row label="Due date" value={formatDate(invoice.due_date)} /> : null}
             </View>
 

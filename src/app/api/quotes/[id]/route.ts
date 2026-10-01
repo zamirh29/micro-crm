@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { requireApiUser } from "@/lib/api-auth"
+import { isSuperAdmin } from "@/lib/admin"
 import { jsonError, readJson, errorFromThrown } from "@/lib/api-utils"
 import {
   updateQuoteRecord,
@@ -52,7 +53,12 @@ export async function GET(
     status: quote.status as string | null,
   })
 
-  return NextResponse.json({ quote, can_edit: gate.ok })
+  return NextResponse.json({
+    quote,
+    can_edit: gate.ok,
+    can_edit_date: isSuperAdmin(auth.user.email),
+    edit_block: gate.ok ? null : gate.status === 403 ? "plan" : "paid",
+  })
 }
 
 export async function PATCH(

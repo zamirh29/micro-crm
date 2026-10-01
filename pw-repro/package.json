@@ -1,0 +1,10 @@
+{
+  "name": "pw-repro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Temporary Playwright verification scripts (not part of the app).",
+  "type": "commonjs",
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}
