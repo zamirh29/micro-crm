@@ -132,6 +132,11 @@ export default async function InvoiceDetailPage({
               </span>
             </div>
             <p className="text-sm text-muted-foreground">{invoice.title}</p>
+            {invoice.original_number && (
+              <p className="text-sm text-muted-foreground">
+                Imported from {invoice.original_number}
+              </p>
+            )}
           </div>
         </div>
 

@@ -130,6 +130,11 @@ export default async function QuoteDetailPage({
               </span>
             </div>
             <p className="text-sm text-muted-foreground">{quote.title}</p>
+            {quote.original_number && (
+              <p className="text-sm text-muted-foreground">
+                Imported from {quote.original_number}
+              </p>
+            )}
           </div>
         </div>
 

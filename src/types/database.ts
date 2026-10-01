@@ -62,6 +62,8 @@ export interface Quote {
   notes: string | null
   sent_at: string | null
   accepted_at: string | null
+  original_number: string | null
+  is_imported: boolean
   created_at: string
   updated_at: string
 }
@@ -93,6 +95,8 @@ export interface Invoice {
   paid_at: string | null
   sent_at: string | null
   notes: string | null
+  original_number: string | null
+  is_imported: boolean
   created_at: string
   updated_at: string
 }
