@@ -60,6 +60,8 @@ export interface Quote {
   valid_until: string
   reminder_sent: boolean
   notes: string | null
+  sent_at: string | null
+  accepted_at: string | null
   created_at: string
   updated_at: string
 }
@@ -89,6 +91,7 @@ export interface Invoice {
   currency: string
   due_date: string
   paid_at: string | null
+  sent_at: string | null
   notes: string | null
   created_at: string
   updated_at: string

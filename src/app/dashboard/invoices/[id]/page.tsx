@@ -292,6 +292,12 @@ export default async function InvoiceDetailPage({
                 <dt className="text-muted-foreground">Invoice date</dt>
                 <dd>{formatDate(invoice.created_at)}</dd>
               </div>
+              {invoice.sent_at && (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Sent</dt>
+                  <dd>{formatDate(invoice.sent_at)}</dd>
+                </div>
+              )}
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Due Date</dt>
                 <dd>{formatDate(invoice.due_date)}</dd>

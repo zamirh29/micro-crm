@@ -281,6 +281,18 @@ export default async function QuoteDetailPage({
                 <dt className="text-muted-foreground">Created</dt>
                 <dd>{formatDate(quote.created_at)}</dd>
               </div>
+              {quote.sent_at && (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Sent</dt>
+                  <dd>{formatDate(quote.sent_at)}</dd>
+                </div>
+              )}
+              {quote.accepted_at && (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Accepted</dt>
+                  <dd>{formatDate(quote.accepted_at)}</dd>
+                </div>
+              )}
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Valid Until</dt>
                 <dd>{formatDate(quote.valid_until)}</dd>

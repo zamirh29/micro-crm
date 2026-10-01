@@ -88,6 +88,8 @@ export default async function EditInvoicePage({
 
   const invoiceItems = (invoice.invoice_items ?? []) as InvoiceItem[]
   const invoiceDate = invoice.created_at.slice(0, 10)
+  const sentDate = invoice.sent_at ? invoice.sent_at.slice(0, 10) : ""
+  const paidDate = invoice.paid_at ? invoice.paid_at.slice(0, 10) : ""
 
   return (
     <InvoiceForm
@@ -109,6 +111,8 @@ export default async function EditInvoicePage({
       }))}
       error={sp.error ?? null}
       invoice_date={invoiceDate}
+      sent_date={sentDate}
+      paid_date={paidDate}
       canEditDate={await hasSuperAdminPrivilege(user)}
     />
   )

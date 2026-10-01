@@ -37,6 +37,8 @@ export interface Quote {
   total: number;
   valid_until: string | null;
   notes: string | null;
+  sent_at: string | null;
+  accepted_at: string | null;
   created_at: string;
   contact_id: string;
   contacts?: ContactBrief | null;
@@ -63,6 +65,8 @@ export interface Invoice {
   tax_amount: number;
   total: number;
   due_date: string | null;
+  paid_at: string | null;
+  sent_at: string | null;
   notes: string | null;
   created_at: string;
   contact_id: string;

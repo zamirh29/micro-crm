@@ -59,6 +59,8 @@ type Form = {
   notes: string;
   due_date: string;
   invoice_date: string;
+  sent_at: string;
+  paid_at: string;
   currency: string;
 };
 
@@ -203,6 +205,8 @@ function InvoiceEditForm({
       if (canEditDate) {
         const invoiceDate = form.invoice_date.trim();
         if (invoiceDate) body.invoice_date = invoiceDate;
+        body.sent_at = form.sent_at.trim() || null;
+        body.paid_at = form.paid_at.trim() || null;
       }
 
       await api(`/api/invoices/${id}`, { method: 'PATCH', body });
@@ -305,6 +309,30 @@ function InvoiceEditForm({
                   style={styles.input}
                   value={form.invoice_date}
                   onChangeText={(value) => update('invoice_date', value)}
+                  placeholder="YYYY-MM-DD"
+                  keyboardType="numbers-and-punctuation"
+                />
+              </Field>
+            ) : null}
+
+            {canEditDate ? (
+              <Field label="Sent date" hint="When the invoice was sent (leave blank for drafts)">
+                <TextInput
+                  style={styles.input}
+                  value={form.sent_at}
+                  onChangeText={(value) => update('sent_at', value)}
+                  placeholder="YYYY-MM-DD"
+                  keyboardType="numbers-and-punctuation"
+                />
+              </Field>
+            ) : null}
+
+            {canEditDate ? (
+              <Field label="Paid date" hint="When payment was received (clear if unpaid)">
+                <TextInput
+                  style={styles.input}
+                  value={form.paid_at}
+                  onChangeText={(value) => update('paid_at', value)}
                   placeholder="YYYY-MM-DD"
                   keyboardType="numbers-and-punctuation"
                 />
@@ -589,6 +617,8 @@ function seedForm(invoice: Invoice): Form {
     notes: invoice.notes ?? '',
     due_date: invoice.due_date ?? '',
     invoice_date: invoice.created_at.slice(0, 10),
+    sent_at: invoice.sent_at ? invoice.sent_at.slice(0, 10) : '',
+    paid_at: invoice.paid_at ? invoice.paid_at.slice(0, 10) : '',
     currency: invoice.currency || 'GBP',
   };
 }
@@ -614,6 +644,10 @@ function validate(form: Form, items: Item[], canEditDate: boolean): string | nul
   if (canEditDate) {
     const invoiceDate = form.invoice_date.trim();
     if (invoiceDate && !DATE_RE.test(invoiceDate)) return 'Invoice date must be YYYY-MM-DD';
+    const sentAt = form.sent_at.trim();
+    if (sentAt && !DATE_RE.test(sentAt)) return 'Sent date must be YYYY-MM-DD';
+    const paidAt = form.paid_at.trim();
+    if (paidAt && !DATE_RE.test(paidAt)) return 'Paid date must be YYYY-MM-DD';
   }
   const tax = Number.parseFloat(form.tax_rate || '0');
   if (!Number.isFinite(tax) || tax < 0 || tax > 100) return 'Tax rate must be between 0 and 100';

@@ -1,7 +1,9 @@
 import Link from "next/link"
-import { Plus } from "lucide-react"
+import { Pencil, Plus } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { formatCurrency, formatDate, cn } from "@/lib/utils"
+import { getSubscription, isProSubscription } from "@/lib/subscription"
+import { hasSuperAdminPrivilege } from "@/lib/impersonation"
 import type { InvoiceStatus } from "@/types/database"
 import ExportCsvButton from "@/components/export-csv-button"
 
@@ -33,6 +35,11 @@ export default async function InvoicesPage() {
     .select("*, contacts(first_name, last_name, company)")
     .eq("org_id", membership.org_id)
     .order("created_at", { ascending: false })
+
+  const superPrivilege = await hasSuperAdminPrivilege(user)
+  const canEdit =
+    superPrivilege ||
+    isProSubscription(await getSubscription(supabase, user.id))
 
   return (
     <div className="space-y-6">
@@ -116,6 +123,9 @@ export default async function InvoicesPage() {
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                   Due Date
                 </th>
+                <th className="px-4 py-3 text-right font-medium text-muted-foreground">
+                  <span className="sr-only">Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -165,16 +175,29 @@ export default async function InvoicesPage() {
                           {invoice.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {formatDate(invoice.due_date)}
-                      </td>
-                    </tr>
+<td className="px-4 py-3 text-muted-foreground">
+                      {formatDate(invoice.due_date)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {canEdit &&
+                      (invoice.status !== "paid" || superPrivilege) && (
+                        <Link
+                          href={`/dashboard/invoices/${invoice.id}/edit`}
+                          title="Edit invoice"
+                          aria-label={`Edit invoice ${invoice.number}`}
+                          className="inline-flex items-center justify-center rounded-md border border-border p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Link>
+                      )}
+                    </td>
+                  </tr>
                   )
                 })
               ) : (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-12 text-center text-muted-foreground"
                   >
                     No invoices yet. Create your first invoice to get started.

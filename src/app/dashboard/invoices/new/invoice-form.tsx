@@ -28,6 +28,8 @@ interface InvoiceFormProps {
   items?: LineItem[]
   error?: string | null
   invoice_date?: string
+  sent_date?: string
+  paid_date?: string
   canEditDate?: boolean
 }
 
@@ -45,6 +47,8 @@ export default function InvoiceForm({
   items: initialItems,
   error: serverError,
   invoice_date,
+  sent_date,
+  paid_date,
   canEditDate,
 }: InvoiceFormProps) {
   const router = useRouter()
@@ -65,6 +69,8 @@ export default function InvoiceForm({
   })
 
   const [invoiceDate, setInvoiceDate] = useState(invoice_date ?? "")
+  const [sentDate, setSentDate] = useState(sent_date ?? "")
+  const [paidDate, setPaidDate] = useState(paid_date ?? "")
 
   const [items, setItems] = useState<LineItem[]>(
     isEdit
@@ -122,6 +128,8 @@ export default function InvoiceForm({
       fd.set("due_date", form.due_date)
       fd.set("currency", form.currency)
       if (showInvoiceDate && invoiceDate) fd.set("invoice_date", invoiceDate)
+      if (showInvoiceDate) fd.set("sent_date", sentDate)
+      if (showInvoiceDate) fd.set("paid_date", paidDate)
       fd.set("items", JSON.stringify(items))
 
       if (invoice) {
@@ -207,6 +215,48 @@ export default function InvoiceForm({
                 <p className="mt-1 text-xs text-muted-foreground">
                   The date shown on the invoice. Leave as-is unless correcting a
                   historical document.
+                </p>
+              </div>
+            )}
+
+            {showInvoiceDate && (
+              <div>
+                <label
+                  htmlFor="sent_date"
+                  className="block text-sm font-medium text-foreground"
+                >
+                  Sent date
+                </label>
+                <input
+                  id="sent_date"
+                  type="date"
+                  value={sentDate}
+                  onChange={(e) => setSentDate(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  When the invoice was sent to the customer.
+                </p>
+              </div>
+            )}
+
+            {showInvoiceDate && (
+              <div>
+                <label
+                  htmlFor="paid_date"
+                  className="block text-sm font-medium text-foreground"
+                >
+                  Paid date
+                </label>
+                <input
+                  id="paid_date"
+                  type="date"
+                  value={paidDate}
+                  onChange={(e) => setPaidDate(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  When payment was received. Clear it if the invoice is not paid.
                 </p>
               </div>
             )}

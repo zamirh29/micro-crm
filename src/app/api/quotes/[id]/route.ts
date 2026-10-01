@@ -15,18 +15,26 @@ const lineItemSchema = z.object({
   unit_price: z.number().nonnegative("Unit price cannot be negative"),
 })
 
+const dateField = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD")
+  .nullish()
+
 const patchSchema = z.object({
   contact_id: z.string().min(1).optional(),
   title: z.string().trim().min(1, "Title is required").optional(),
   description: z.string().nullish(),
   tax_rate: z.number().min(0).max(100).optional(),
   notes: z.string().nullish(),
-  valid_until: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "valid_until must be YYYY-MM-DD")
-    .nullish(),
+  valid_until: dateField,
   status: z.enum(["draft", "sent", "accepted", "rejected", "expired"]).optional(),
   currency: z.string().min(1).optional(),
+  quote_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "quote_date must be YYYY-MM-DD")
+    .optional(),
+  sent_at: dateField,
+  accepted_at: dateField,
   items: z.array(lineItemSchema).min(1, "At least one line item is required").optional(),
 })
 
@@ -86,14 +94,46 @@ export async function PATCH(
   const parsed = await readJson(request, patchSchema)
   if (!parsed.ok) return parsed.response
 
+  const {
+    quote_date: quoteDate,
+    sent_at: sentAt,
+    accepted_at: acceptedAt,
+    ...patch
+  } = parsed.data
+
+  if (
+    (quoteDate !== undefined || sentAt !== undefined || acceptedAt !== undefined) &&
+    !(await hasSuperAdminPrivilege(auth.user))
+  ) {
+    return jsonError("Only the super admin can change quote dates", 403)
+  }
+
   try {
     const quote = await updateQuoteRecord(auth.supabase, {
       orgId: auth.orgId,
       userId: auth.user.id,
       id,
-      input: parsed.data,
+      input: patch,
     })
     if (!quote) return jsonError("Quote not found", 404)
+
+    const noon = (value: string) => `${value}T12:00:00.000Z`
+
+    const datePatch: Record<string, string | null> = {}
+    if (quoteDate) datePatch.created_at = noon(quoteDate)
+    if (sentAt !== undefined) datePatch.sent_at = sentAt ? noon(sentAt) : null
+    if (acceptedAt !== undefined) {
+      datePatch.accepted_at = acceptedAt ? noon(acceptedAt) : null
+    }
+
+    if (Object.keys(datePatch).length > 0) {
+      await auth.supabase
+        .from("quotes")
+        .update(datePatch)
+        .eq("id", id)
+        .eq("org_id", auth.orgId)
+    }
+
     return NextResponse.json({ quote })
   } catch (err) {
     return errorFromThrown(err)

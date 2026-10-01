@@ -57,6 +57,9 @@ type Form = {
   description: string;
   notes: string;
   valid_until: string;
+  quote_date: string;
+  sent_at: string;
+  accepted_at: string;
   currency: string;
 };
 
@@ -73,6 +76,7 @@ export default function QuoteEditScreen() {
   }>(id ? `/api/quotes/${id}` : null, `cache:quote:${id}`);
   const quote = data?.quote;
   const canEdit = data?.can_edit === true;
+  const canEditDate = data?.can_edit_date === true;
   const editBlock = data?.edit_block ?? null;
 
   return (
@@ -94,14 +98,22 @@ export default function QuoteEditScreen() {
             }
           />
         ) : (
-          <QuoteEditForm key={id} id={id} quote={quote} />
+          <QuoteEditForm key={id} id={id} quote={quote} canEditDate={canEditDate} />
         )}
       </ScreenState>
     </>
   );
 }
 
-function QuoteEditForm({ id, quote }: { id: string; quote: Quote }) {
+function QuoteEditForm({
+  id,
+  quote,
+  canEditDate,
+}: {
+  id: string;
+  quote: Quote;
+  canEditDate: boolean;
+}) {
   const [form, setForm] = useState<Form>(() => seedForm(quote));
   const [items, setItems] = useState<Item[]>(() => seedItems(quote));
   const [saving, setSaving] = useState(false);
@@ -174,7 +186,7 @@ function QuoteEditForm({ id, quote }: { id: string; quote: Quote }) {
 
   async function save() {
     if (saving) return;
-    const validationError = validate(form, items);
+    const validationError = validate(form, items, canEditDate);
     if (validationError) {
       setFormError(validationError);
       return;
@@ -197,6 +209,12 @@ function QuoteEditForm({ id, quote }: { id: string; quote: Quote }) {
         })),
       };
       body.valid_until = form.valid_until.trim() || null;
+      if (canEditDate) {
+        const quoteDate = form.quote_date.trim();
+        if (quoteDate) body.quote_date = quoteDate;
+        body.sent_at = form.sent_at.trim() || null;
+        body.accepted_at = form.accepted_at.trim() || null;
+      }
 
       await api(`/api/quotes/${id}`, { method: 'PATCH', body });
       await AsyncStorage.removeItem(`cache:quote:${id}`).catch(() => {});
@@ -286,6 +304,42 @@ function QuoteEditForm({ id, quote }: { id: string; quote: Quote }) {
                 keyboardType="numbers-and-punctuation"
               />
             </Field>
+
+            {canEditDate ? (
+              <Field label="Quote date" hint="The date the quote was issued">
+                <TextInput
+                  style={styles.input}
+                  value={form.quote_date}
+                  onChangeText={(value) => update('quote_date', value)}
+                  placeholder="YYYY-MM-DD"
+                  keyboardType="numbers-and-punctuation"
+                />
+              </Field>
+            ) : null}
+
+            {canEditDate ? (
+              <Field label="Sent date" hint="When the quote was sent (blank for drafts)">
+                <TextInput
+                  style={styles.input}
+                  value={form.sent_at}
+                  onChangeText={(value) => update('sent_at', value)}
+                  placeholder="YYYY-MM-DD"
+                  keyboardType="numbers-and-punctuation"
+                />
+              </Field>
+            ) : null}
+
+            {canEditDate ? (
+              <Field label="Accepted date" hint="When the customer accepted (clear if not accepted)">
+                <TextInput
+                  style={styles.input}
+                  value={form.accepted_at}
+                  onChangeText={(value) => update('accepted_at', value)}
+                  placeholder="YYYY-MM-DD"
+                  keyboardType="numbers-and-punctuation"
+                />
+              </Field>
+            ) : null}
 
             <Field label="Currency">
               <Pressable
@@ -551,6 +605,9 @@ function seedForm(quote: Quote): Form {
     description: quote.description ?? '',
     notes: quote.notes ?? '',
     valid_until: quote.valid_until ?? '',
+    quote_date: quote.created_at.slice(0, 10),
+    sent_at: quote.sent_at ? quote.sent_at.slice(0, 10) : '',
+    accepted_at: quote.accepted_at ? quote.accepted_at.slice(0, 10) : '',
     currency: quote.currency || 'GBP',
   };
 }
@@ -568,11 +625,19 @@ function seedItems(quote: Quote): Item[] {
   }));
 }
 
-function validate(form: Form, items: Item[]): string | null {
+function validate(form: Form, items: Item[], canEditDate: boolean): string | null {
   if (!form.contact_id) return 'Choose a customer';
   if (!form.title.trim()) return 'Title is required';
   const validUntil = form.valid_until.trim();
   if (validUntil && !DATE_RE.test(validUntil)) return 'Valid until must be YYYY-MM-DD';
+  if (canEditDate) {
+    const quoteDate = form.quote_date.trim();
+    if (quoteDate && !DATE_RE.test(quoteDate)) return 'Quote date must be YYYY-MM-DD';
+    const sentAt = form.sent_at.trim();
+    if (sentAt && !DATE_RE.test(sentAt)) return 'Sent date must be YYYY-MM-DD';
+    const acceptedAt = form.accepted_at.trim();
+    if (acceptedAt && !DATE_RE.test(acceptedAt)) return 'Accepted date must be YYYY-MM-DD';
+  }
   if (items.length === 0) return 'Add at least one line item';
   for (const [index, item] of items.entries()) {
     if (!item.description.trim()) return `Line item ${index + 1} needs a description`;

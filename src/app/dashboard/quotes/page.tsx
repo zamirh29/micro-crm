@@ -1,7 +1,9 @@
 import Link from "next/link"
-import { Plus } from "lucide-react"
+import { Pencil, Plus } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { formatCurrency, formatDate, cn } from "@/lib/utils"
+import { getSubscription, isProSubscription } from "@/lib/subscription"
+import { hasSuperAdminPrivilege } from "@/lib/impersonation"
 import type { QuoteStatus } from "@/types/database"
 import ExportCsvButton from "@/components/export-csv-button"
 
@@ -34,6 +36,10 @@ export default async function QuotesPage() {
     .select("*, contacts(first_name, last_name, company)")
     .eq("org_id", membership.org_id)
     .order("created_at", { ascending: false })
+
+  const canEdit =
+    (await hasSuperAdminPrivilege(user)) ||
+    isProSubscription(await getSubscription(supabase, user.id))
 
   return (
     <div className="space-y-6">
@@ -117,6 +123,9 @@ export default async function QuotesPage() {
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                   Valid Until
                 </th>
+                <th className="px-4 py-3 text-right font-medium text-muted-foreground">
+                  <span className="sr-only">Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -169,13 +178,25 @@ export default async function QuotesPage() {
                       <td className="px-4 py-3 text-muted-foreground">
                         {formatDate(quote.valid_until)}
                       </td>
+                      <td className="px-4 py-3 text-right">
+                        {canEdit && (
+                          <Link
+                            href={`/dashboard/quotes/${quote.id}/edit`}
+                            title="Edit quote"
+                            aria-label={`Edit quote ${quote.number}`}
+                            className="inline-flex items-center justify-center rounded-md border border-border p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Link>
+                        )}
+                      </td>
                     </tr>
                   )
                 })
               ) : (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-12 text-center text-muted-foreground"
                   >
                     No quotes yet. Create your first quote to get started.

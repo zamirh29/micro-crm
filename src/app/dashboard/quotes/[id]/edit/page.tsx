@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getCompanyProfile } from "@/lib/company"
 import { checkEditGate } from "@/lib/subscription"
+import { hasSuperAdminPrivilege } from "@/lib/impersonation"
 import ProGate from "@/components/pro-gate"
 import type { QuoteItem } from "@/types/database"
 import QuoteForm from "../../new/quote-form"
@@ -61,6 +62,9 @@ export default async function EditQuotePage({
   const company = await getCompanyProfile(supabase, membership.org_id)
 
   const items = quote.quote_items as QuoteItem[]
+  const quoteDate = quote.created_at.slice(0, 10)
+  const sentDate = quote.sent_at ? quote.sent_at.slice(0, 10) : ""
+  const acceptedDate = quote.accepted_at ? quote.accepted_at.slice(0, 10) : ""
 
   return (
     <QuoteForm
@@ -81,6 +85,10 @@ export default async function EditQuotePage({
         unit_price: item.unit_price,
       }))}
       error={sp.error ?? null}
+      quote_date={quoteDate}
+      sent_date={sentDate}
+      accepted_date={acceptedDate}
+      canEditDate={await hasSuperAdminPrivilege(user)}
     />
   )
 }

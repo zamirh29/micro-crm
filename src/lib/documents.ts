@@ -479,6 +479,7 @@ export async function sendQuoteRecord(
     .from("quotes")
     .update({
       status: "sent" as QuoteStatus,
+      sent_at: quote.sent_at ?? new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
@@ -613,6 +614,7 @@ export async function convertQuoteToInvoiceRecord(
     .from("quotes")
     .update({
       status: "accepted" as QuoteStatus,
+      accepted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
@@ -880,6 +882,7 @@ export async function sendInvoiceRecord(
     .from("invoices")
     .update({
       status: "sent" as InvoiceStatus,
+      sent_at: invoice.sent_at ?? new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)

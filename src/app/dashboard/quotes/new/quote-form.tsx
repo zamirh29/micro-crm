@@ -31,6 +31,10 @@ interface QuoteFormProps {
   }
   quoteItems?: { description: string; quantity: number; unit_price: number }[]
   error?: string | null
+  quote_date?: string
+  sent_date?: string
+  accepted_date?: string
+  canEditDate?: boolean
 }
 
 export default function QuoteForm({
@@ -38,7 +42,12 @@ export default function QuoteForm({
   quote,
   quoteItems,
   error: initialError,
+  quote_date,
+  sent_date,
+  accepted_date,
+  canEditDate,
 }: QuoteFormProps) {
+  const showDates = Boolean(quote) && Boolean(canEditDate)
   const [contactId, setContactId] = useState(quote?.contact_id ?? "")
   const [currency, setCurrency] = useState(
     quote?.currency || defaultCurrency || DEFAULT_COMPANY.currency
@@ -186,6 +195,64 @@ export default function QuoteForm({
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
+
+            {showDates && (
+              <div className="space-y-2">
+                <label
+                  htmlFor="quote_date"
+                  className="text-sm font-medium leading-none"
+                >
+                  Quote date
+                </label>
+                <input
+                  id="quote_date"
+                  name="quote_date"
+                  type="date"
+                  defaultValue={quote_date ?? undefined}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
+            )}
+
+            {showDates && (
+              <div className="space-y-2">
+                <label
+                  htmlFor="sent_date"
+                  className="text-sm font-medium leading-none"
+                >
+                  Sent date
+                </label>
+                <input
+                  id="sent_date"
+                  name="sent_date"
+                  type="date"
+                  defaultValue={sent_date ?? undefined}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
+            )}
+
+            {showDates && (
+              <div className="space-y-2">
+                <label
+                  htmlFor="accepted_date"
+                  className="text-sm font-medium leading-none"
+                >
+                  Accepted date
+                </label>
+                <input
+                  id="accepted_date"
+                  name="accepted_date"
+                  type="date"
+                  defaultValue={accepted_date ?? undefined}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <p className="text-xs text-muted-foreground">
+                  When the customer accepted this quote. Clear it if the quote is
+                  not accepted.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <label

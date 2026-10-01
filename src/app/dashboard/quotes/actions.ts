@@ -13,6 +13,7 @@ import {
   type QuotePatch,
 } from "@/lib/documents"
 import { checkEditGate } from "@/lib/subscription"
+import { hasSuperAdminPrivilege } from "@/lib/impersonation"
 import type { QuoteStatus } from "@/types/database"
 
 async function getSession() {
@@ -81,6 +82,41 @@ export async function updateQuote(id: string, formData: FormData) {
 
   const items = JSON.parse(formData.get("items") as string) as LineItemInput[]
 
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/
+
+  const rawQuoteDate = formData.get("quote_date")
+  const quoteDate = typeof rawQuoteDate === "string" ? rawQuoteDate : ""
+  const rawSentDate = formData.get("sent_date")
+  const rawAcceptedDate = formData.get("accepted_date")
+  const sentDate = formData.has("sent_date")
+    ? typeof rawSentDate === "string"
+      ? rawSentDate
+      : ""
+    : null
+  const acceptedDate = formData.has("accepted_date")
+    ? typeof rawAcceptedDate === "string"
+      ? rawAcceptedDate
+      : ""
+    : null
+
+  if (
+    (Boolean(quoteDate) || sentDate !== null || acceptedDate !== null) &&
+    !(await hasSuperAdminPrivilege(user))
+  ) {
+    redirect(
+      `/dashboard/quotes/${id}/edit?error=${encodeURIComponent("Only the super admin can change quote dates.")}`
+    )
+  }
+
+  const badDate = [quoteDate, sentDate, acceptedDate].find(
+    (value) => value !== null && value !== "" && !datePattern.test(value)
+  )
+  if (badDate !== undefined) {
+    redirect(
+      `/dashboard/quotes/${id}/edit?error=${encodeURIComponent("Dates must be in YYYY-MM-DD format")}`
+    )
+  }
+
   const rawStatus = formData.get("status")
 
   const input: QuotePatch = {
@@ -102,6 +138,22 @@ export async function updateQuote(id: string, formData: FormData) {
     id,
     input,
   })
+
+  const stamp = (value: string | null) =>
+    value ? `${value}T12:00:00.000Z` : null
+
+  const datePatch: Record<string, string | null> = {}
+  if (quoteDate) datePatch.created_at = stamp(quoteDate)
+  if (sentDate !== null) datePatch.sent_at = stamp(sentDate)
+  if (acceptedDate !== null) datePatch.accepted_at = stamp(acceptedDate)
+
+  if (Object.keys(datePatch).length > 0) {
+    await supabase
+      .from("quotes")
+      .update(datePatch)
+      .eq("id", id)
+      .eq("org_id", orgId)
+  }
 
   revalidatePath("/dashboard/quotes")
   revalidatePath(`/dashboard/quotes/${id}`)

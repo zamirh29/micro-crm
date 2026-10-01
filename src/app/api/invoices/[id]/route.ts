@@ -12,22 +12,26 @@ const lineItemSchema = z.object({
   unit_price: z.number().nonnegative("Unit price cannot be negative"),
 })
 
+const dateField = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD")
+  .nullish()
+
 const patchSchema = z.object({
   contact_id: z.string().min(1).optional(),
   title: z.string().trim().min(1, "Title is required").optional(),
   description: z.string().nullish(),
   tax_rate: z.number().min(0).max(100).optional(),
   notes: z.string().nullish(),
-  due_date: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "due_date must be YYYY-MM-DD")
-    .nullish(),
+  due_date: dateField,
   status: z.enum(["draft", "sent", "paid", "overdue"]).optional(),
   currency: z.string().min(1).optional(),
   invoice_date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "invoice_date must be YYYY-MM-DD")
     .optional(),
+  sent_at: dateField,
+  paid_at: dateField,
   items: z.array(lineItemSchema).min(1, "At least one line item is required").optional(),
 })
 
@@ -87,10 +91,18 @@ export async function PATCH(
   const parsed = await readJson(request, patchSchema)
   if (!parsed.ok) return parsed.response
 
-  const { invoice_date: invoiceDate, ...patch } = parsed.data
+  const {
+    invoice_date: invoiceDate,
+    sent_at: sentAt,
+    paid_at: paidAt,
+    ...patch
+  } = parsed.data
 
-  if (invoiceDate && !(await hasSuperAdminPrivilege(auth.user))) {
-    return jsonError("Only the super admin can change the invoice date", 403)
+  if (
+    (invoiceDate !== undefined || sentAt !== undefined || paidAt !== undefined) &&
+    !(await hasSuperAdminPrivilege(auth.user))
+  ) {
+    return jsonError("Only the super admin can change invoice dates", 403)
   }
 
   try {
@@ -102,10 +114,24 @@ export async function PATCH(
     })
     if (!invoice) return jsonError("Invoice not found", 404)
 
+    const noon = (value: string) => `${value}T12:00:00.000Z`
+
     if (invoiceDate) {
       await auth.supabase
         .from("invoices")
-        .update({ created_at: `${invoiceDate}T12:00:00.000Z` })
+        .update({ created_at: noon(invoiceDate) })
+        .eq("id", id)
+        .eq("org_id", auth.orgId)
+    }
+
+    const datePatch: Record<string, string | null> = {}
+    if (sentAt !== undefined) datePatch.sent_at = sentAt ? noon(sentAt) : null
+    if (paidAt !== undefined) datePatch.paid_at = paidAt ? noon(paidAt) : null
+
+    if (Object.keys(datePatch).length > 0) {
+      await auth.supabase
+        .from("invoices")
+        .update(datePatch)
         .eq("id", id)
         .eq("org_id", auth.orgId)
     }

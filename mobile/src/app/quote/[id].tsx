@@ -104,6 +104,8 @@ export default function QuoteDetailScreen() {
               {quote.contacts?.company ? <Row label="Company" value={quote.contacts.company} /> : null}
               {quote.contacts?.email ? <Row label="Email" value={quote.contacts.email} /> : null}
               <Row label="Created" value={formatDate(quote.created_at)} />
+              {quote.sent_at ? <Row label="Sent" value={formatDate(quote.sent_at)} /> : null}
+              {quote.accepted_at ? <Row label="Accepted" value={formatDate(quote.accepted_at)} /> : null}
               {quote.valid_until ? <Row label="Valid until" value={formatDate(quote.valid_until)} /> : null}
             </View>
 

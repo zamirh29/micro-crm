@@ -102,7 +102,9 @@ export default function InvoiceDetailScreen() {
               {invoice.contacts?.company ? <Row label="Company" value={invoice.contacts.company} /> : null}
               {invoice.contacts?.email ? <Row label="Email" value={invoice.contacts.email} /> : null}
               <Row label="Invoice date" value={formatDate(invoice.created_at)} />
+              {invoice.sent_at ? <Row label="Sent" value={formatDate(invoice.sent_at)} /> : null}
               {invoice.due_date ? <Row label="Due date" value={formatDate(invoice.due_date)} /> : null}
+              {invoice.paid_at ? <Row label="Paid" value={formatDate(invoice.paid_at)} /> : null}
             </View>
 
             <Text style={styles.sectionTitle}>Line items</Text>

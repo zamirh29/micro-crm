@@ -80,20 +80,40 @@ export async function updateInvoice(id: string, formData: FormData) {
     redirect(`/dashboard/invoices/${id}/edit?error=${encodeURIComponent(gate.message)}`)
   }
 
-  const rawInvoiceDate = formData.get("invoice_date")
-  const invoiceDate = typeof rawInvoiceDate === "string" ? rawInvoiceDate : ""
-  if (invoiceDate) {
-    if (!(await hasSuperAdminPrivilege(user))) {
-      redirect(
-        `/dashboard/invoices/${id}/edit?error=${encodeURIComponent("Only the super admin can change the invoice date.")}`
-      )
-    }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(invoiceDate)) {
-      redirect(
-        `/dashboard/invoices/${id}/edit?error=${encodeURIComponent("Invoice date must be YYYY-MM-DD")}`
-      )
-    }
-  }
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/
+
+const rawInvoiceDate = formData.get("invoice_date")
+const invoiceDate = typeof rawInvoiceDate === "string" ? rawInvoiceDate : ""
+const rawSentDate = formData.get("sent_date")
+const rawPaidDate = formData.get("paid_date")
+const sentDate = formData.has("sent_date")
+  ? typeof rawSentDate === "string"
+    ? rawSentDate
+    : ""
+  : null
+const paidDate = formData.has("paid_date")
+  ? typeof rawPaidDate === "string"
+    ? rawPaidDate
+    : ""
+  : null
+
+const touchesDates =
+  Boolean(invoiceDate) || sentDate !== null || paidDate !== null
+
+if (touchesDates && !(await hasSuperAdminPrivilege(user))) {
+  redirect(
+    `/dashboard/invoices/${id}/edit?error=${encodeURIComponent("Only the super admin can change invoice dates.")}`
+  )
+}
+
+const badDate = [invoiceDate, sentDate, paidDate].find(
+  (value) => value !== null && value !== "" && !datePattern.test(value)
+)
+if (badDate !== undefined) {
+  redirect(
+    `/dashboard/invoices/${id}/edit?error=${encodeURIComponent("Dates must be in YYYY-MM-DD format")}`
+  )
+}
 
   const items = JSON.parse(formData.get("items") as string) as LineItemInput[]
 
@@ -123,6 +143,21 @@ export async function updateInvoice(id: string, formData: FormData) {
     await supabase
       .from("invoices")
       .update({ created_at: `${invoiceDate}T12:00:00.000Z` })
+      .eq("id", id)
+      .eq("org_id", orgId)
+  }
+
+  const stamp = (value: string | null) =>
+    value ? `${value}T12:00:00.000Z` : null
+
+  const datePatch: Record<string, string | null> = {}
+  if (sentDate !== null) datePatch.sent_at = stamp(sentDate)
+  if (paidDate !== null) datePatch.paid_at = stamp(paidDate)
+
+  if (Object.keys(datePatch).length > 0) {
+    await supabase
+      .from("invoices")
+      .update(datePatch)
       .eq("id", id)
       .eq("org_id", orgId)
   }
