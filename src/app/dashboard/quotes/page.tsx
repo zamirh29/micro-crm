@@ -4,8 +4,10 @@ import { createClient } from "@/lib/supabase/server"
 import { formatCurrency, formatDate, cn } from "@/lib/utils"
 import { getSubscription, isProSubscription } from "@/lib/subscription"
 import { hasSuperAdminPrivilege } from "@/lib/impersonation"
+import { listDeletedDocuments } from "@/lib/activity"
 import type { QuoteStatus } from "@/types/database"
 import ExportCsvButton from "@/components/export-csv-button"
+import DeletedDocumentsTray from "@/components/deleted-documents-tray"
 
 const statusStyles: Record<QuoteStatus, string> = {
   draft: "bg-gray-100 text-gray-800",
@@ -40,6 +42,14 @@ export default async function QuotesPage() {
   const canEdit =
     (await hasSuperAdminPrivilege(user)) ||
     isProSubscription(await getSubscription(supabase, user.id))
+
+  const deletedQuotes = canEdit
+    ? await listDeletedDocuments(supabase, {
+        orgId: membership.org_id,
+        entity: "quote",
+        limit: 10,
+      })
+    : []
 
   return (
     <div className="space-y-6">
@@ -99,6 +109,8 @@ export default async function QuotesPage() {
           </Link>
         </div>
       </div>
+
+      <DeletedDocumentsTray entries={deletedQuotes} entityLabel="Quotes" />
 
       <div className="rounded-lg border border-border bg-card shadow-sm">
         <div className="overflow-x-auto">

@@ -1,4 +1,13 @@
-import { FileText, Receipt, Wallet, TriangleAlert, CalendarCheck } from "lucide-react"
+import Link from "next/link"
+import {
+  FileText,
+  Receipt,
+  Wallet,
+  TriangleAlert,
+  CalendarCheck,
+  Coins,
+  PiggyBank,
+} from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { getCompanyProfile } from "@/lib/company"
 import { formatCurrency } from "@/lib/utils"
@@ -50,6 +59,7 @@ export default async function MonthEndReportPage({
         features={[
           "Monthly sales snapshot for any month",
           "Per-customer quoted, invoiced, paid and outstanding totals",
+          "Costs, gross profit and margin for the month",
           "Review last month, any past month, or plan the current one",
         ]}
       />
@@ -69,6 +79,13 @@ export default async function MonthEndReportPage({
   )
 
   const customers = summary.customers
+
+  const costsTotal = summary.expenses.total
+  const grossProfit = summary.totals.paidTotal - costsTotal
+  const marginPct =
+    summary.totals.paidTotal > 0
+      ? (grossProfit / summary.totals.paidTotal) * 100
+      : null
 
   const cards = [
     {
@@ -95,6 +112,21 @@ export default async function MonthEndReportPage({
       icon: TriangleAlert,
       bg: "bg-red-50 text-red-600 dark:bg-red-950",
     },
+    {
+      label: `Costs — ${band.label}`,
+      value: costsTotal,
+      icon: Coins,
+      bg: "bg-orange-50 text-orange-600 dark:bg-orange-950",
+    },
+    {
+      label: "Gross profit",
+      value: grossProfit,
+      icon: PiggyBank,
+      bg:
+        grossProfit >= 0
+          ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950"
+          : "bg-red-50 text-red-600 dark:bg-red-950",
+    },
   ]
 
   const customerOptions = customers.map((c) => ({
@@ -113,7 +145,7 @@ export default async function MonthEndReportPage({
     "Paid",
     "Outstanding",
   ]
-  const csvRows = summary.rows.map((r) => [
+  const csvRows: (string | number)[][] = summary.rows.map((r) => [
     r.name,
     r.company ?? "",
     r.email ?? "",
@@ -124,6 +156,24 @@ export default async function MonthEndReportPage({
     r.paidTotal,
     r.unpaidTotal,
   ])
+
+  csvRows.push([])
+  csvRows.push(["SUMMARY", "", "", "", "", "", "", "", ""])
+  csvRows.push(["", "", "", "", "", "", "Total collected", summary.totals.paidTotal])
+  for (const category of summary.expenses.byCategory) {
+    csvRows.push([
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      `Costs — ${category.category}`,
+      category.amount,
+    ])
+  }
+  csvRows.push(["", "", "", "", "", "", "Total costs", costsTotal])
+  csvRows.push(["", "", "", "", "", "", "Gross profit", grossProfit])
 
   return (
     <div className="space-y-6">
@@ -154,7 +204,7 @@ export default async function MonthEndReportPage({
         basePath="/dashboard/reports/month-end"
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => (
           <div
             key={card.label}
@@ -175,6 +225,92 @@ export default async function MonthEndReportPage({
             </p>
           </div>
         ))}
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">
+              Costs and profit — {band.label}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {marginPct === null
+                ? "No payments collected this month, so no margin can be calculated."
+                : `Collected ${formatCurrency(
+                    summary.totals.paidTotal,
+                    company.currency
+                  )} less ${formatCurrency(
+                    costsTotal,
+                    company.currency
+                  )} of costs leaves a gross margin of ${marginPct.toFixed(1)}%.`}
+            </p>
+          </div>
+          <Link
+            href="/dashboard/expenses"
+            className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
+          >
+            <Coins className="h-4 w-4" />
+            Manage expenses
+          </Link>
+        </div>
+
+        {summary.expenses.byCategory.length > 0 ? (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="pb-2 text-left font-medium text-muted-foreground">
+                    Category
+                  </th>
+                  <th className="pb-2 text-right font-medium text-muted-foreground">
+                    Amount
+                  </th>
+                  <th className="pb-2 text-right font-medium text-muted-foreground">
+                    Share
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.expenses.byCategory.map((category) => {
+                  const share =
+                    costsTotal > 0 ? (category.amount / costsTotal) * 100 : 0
+                  return (
+                    <tr
+                      key={category.category}
+                      className="border-b border-border last:border-0"
+                    >
+                      <td className="py-2 font-medium">{category.category}</td>
+                      <td className="py-2 text-right">
+                        {formatCurrency(category.amount, company.currency)}
+                      </td>
+                      <td className="py-2 text-right text-muted-foreground">
+                        {share.toFixed(0)}%
+                      </td>
+                    </tr>
+                  )
+                })}
+                <tr className="border-t-2 border-border">
+                  <td className="py-2 font-semibold">Total costs</td>
+                  <td className="py-2 text-right font-semibold">
+                    {formatCurrency(costsTotal, company.currency)}
+                  </td>
+                  <td className="py-2 text-right text-muted-foreground">100%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-muted-foreground">
+            No costs recorded in {band.label}.{" "}
+            <Link
+              href="/dashboard/expenses"
+              className="underline underline-offset-2"
+            >
+              Add this month&apos;s expenses
+            </Link>{" "}
+            to see your true profit for the month.
+          </p>
+        )}
       </div>
 
       <div className="rounded-lg border border-border bg-card shadow-sm">
@@ -262,6 +398,8 @@ export default async function MonthEndReportPage({
           Quoted excludes drafts and rejected quotes. Invoiced excludes drafts.
           Outstanding is the value of sent and overdue invoices created in{" "}
           {band.label}. Collected counts payments received during the month.
+          Costs are business expenses incurred in the month, so gross profit is
+          what you actually kept.
         </p>
       </div>
     </div>

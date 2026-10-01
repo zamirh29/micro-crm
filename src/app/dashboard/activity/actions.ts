@@ -2,13 +2,22 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { hasSuperAdminPrivilege } from "@/lib/impersonation"
+import { getSubscription, isProSubscription } from "@/lib/subscription"
 import {
   logActivity,
   restoreEntity,
+  restoreWindowCutoff,
+  RESTORE_WINDOW_DAYS,
   type ActivityLogRow,
 } from "@/lib/activity"
 
 export type RestoreState = { error?: string; success?: string }
+
+async function canRestore(supabase: Awaited<ReturnType<typeof createClient>>, user: { id: string; email?: string | null }) {
+  if (await hasSuperAdminPrivilege(user)) return true
+  return isProSubscription(await getSubscription(supabase, user.id))
+}
 
 export async function restoreEntry(
   _prev: RestoreState | null,
@@ -27,17 +36,9 @@ export async function restoreEntry(
     .single()
   if (!membership) return { error: "No organization found" }
 
-  const { data: subscription } = await supabase
-    .from("subscriptions")
-    .select("status, plan")
-    .eq("user_id", user.id)
-    .maybeSingle()
-
-  const isPro =
-    subscription?.status === "active" || subscription?.status === "trialing"
-      ? (subscription.plan ?? "free") === "pro"
-      : false
-  if (!isPro) return { error: "Restoring entries is a Pro feature" }
+  if (!(await canRestore(supabase, user))) {
+    return { error: "Restoring entries is a Pro feature" }
+  }
 
   const { data: log } = await supabase
     .from("activity_log")
@@ -51,6 +52,13 @@ export async function restoreEntry(
     return { error: "This entry can't be restored" }
   }
   if (!log.payload) return { error: "No restore data available" }
+
+  const cutoff = restoreWindowCutoff().getTime()
+  if (new Date(log.created_at).getTime() < cutoff) {
+    return {
+      error: `Deleted documents can only be restored within ${RESTORE_WINDOW_DAYS} days`,
+    }
+  }
 
   try {
     await restoreEntity(supabase, log as ActivityLogRow)
@@ -81,6 +89,9 @@ export async function restoreEntry(
   })
 
   revalidatePath("/dashboard/activity")
+  revalidatePath("/dashboard/quotes")
+  revalidatePath("/dashboard/invoices")
+  revalidatePath("/dashboard/contacts")
   return { success: `${capitalize(log.entity)} restored: ${log.label}` }
 }
 

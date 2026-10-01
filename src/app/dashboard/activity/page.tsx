@@ -2,6 +2,7 @@ import { Users, FileText, Receipt, Bell } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import ProGate from "@/components/pro-gate"
 import RestoreButton from "@/components/restore-button"
+import { RESTORE_WINDOW_DAYS } from "@/lib/activity"
 import type { ActivityLogRow } from "@/lib/activity"
 
 export const dynamic = "force-dynamic"
@@ -51,10 +52,10 @@ export default async function ActivityPage() {
     return (
       <ProGate
         title="Activity Log is a Pro feature"
-        description="See the last 10 days of activity in your workspace and restore anything you delete by accident."
+        description={`See the last ${RESTORE_WINDOW_DAYS} days of activity in your workspace and restore anything you delete by accident.`}
         features={[
-          "Full history of customers, quotes, invoices and reminders",
-          "One-click restore of deleted items within 10 days",
+          `Full history of customers, quotes, invoices and reminders`,
+          `One-click restore of deleted items within ${RESTORE_WINDOW_DAYS} days`,
           "Never lose work to a mistaken delete again",
         ]}
       />
@@ -62,7 +63,7 @@ export default async function ActivityPage() {
   }
 
   const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - 10)
+  cutoff.setDate(cutoff.getDate() - RESTORE_WINDOW_DAYS)
 
   const { data: rawLogs } = await supabase
     .from("activity_log")
@@ -90,8 +91,8 @@ export default async function ActivityPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Activity</h1>
         <p className="text-sm text-muted-foreground">
-          The last 10 days of activity in your workspace. Deleted items can be
-          restored if within that window.
+          The last {RESTORE_WINDOW_DAYS} days of activity in your workspace. Deleted
+          items can be restored if within that window.
         </p>
       </div>
 

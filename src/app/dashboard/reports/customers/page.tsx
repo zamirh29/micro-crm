@@ -1,9 +1,12 @@
+import Link from "next/link"
 import {
   FileText,
   Receipt,
   Wallet,
   TriangleAlert,
   Users,
+  Coins,
+  PiggyBank,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { getCompanyProfile } from "@/lib/company"
@@ -56,6 +59,7 @@ export default async function CustomerReportPage({
         features={[
           "Per-customer sales totals over any date band",
           "Quotes, invoices, payments and outstanding balances",
+          "Business costs, gross profit and margin",
           "Monthly presets or custom date ranges",
         ]}
       />
@@ -74,6 +78,13 @@ export default async function CustomerReportPage({
   )
 
   const customers = summary.customers
+
+  const costsTotal = summary.expenses.total
+  const grossProfit = summary.totals.paidTotal - costsTotal
+  const marginPct =
+    summary.totals.paidTotal > 0
+      ? (grossProfit / summary.totals.paidTotal) * 100
+      : null
 
   const cards = [
     {
@@ -100,6 +111,21 @@ export default async function CustomerReportPage({
       icon: TriangleAlert,
       bg: "bg-red-50 text-red-600 dark:bg-red-950",
     },
+    {
+      label: `Costs (${band.label})`,
+      value: costsTotal,
+      icon: Coins,
+      bg: "bg-orange-50 text-orange-600 dark:bg-orange-950",
+    },
+    {
+      label: `Gross profit (${band.label})`,
+      value: grossProfit,
+      icon: PiggyBank,
+      bg:
+        grossProfit >= 0
+          ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950"
+          : "bg-red-50 text-red-600 dark:bg-red-950",
+    },
   ]
 
   const customerOptions = customers.map((c) => ({
@@ -118,7 +144,7 @@ export default async function CustomerReportPage({
     "Paid",
     "Outstanding",
   ]
-  const csvRows = summary.rows.map((r) => [
+  const csvRows: (string | number)[][] = summary.rows.map((r) => [
     r.name,
     r.company ?? "",
     r.email ?? "",
@@ -129,6 +155,15 @@ export default async function CustomerReportPage({
     r.paidTotal,
     r.unpaidTotal,
   ])
+
+  csvRows.push([])
+  csvRows.push(["SUMMARY", "", "", "", "", "", "", "", ""])
+  csvRows.push(["", "", "", "", "", "", "Total paid", summary.totals.paidTotal])
+  for (const category of summary.expenses.byCategory) {
+    csvRows.push(["", "", "", "", "", "", `Costs — ${category.category}`, category.amount])
+  }
+  csvRows.push(["", "", "", "", "", "", "Total costs", costsTotal])
+  csvRows.push(["", "", "", "", "", "", "Gross profit", grossProfit])
 
   return (
     <div className="space-y-6">
@@ -158,7 +193,7 @@ export default async function CustomerReportPage({
         basePath="/dashboard/reports/customers"
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => (
           <div
             key={card.label}
@@ -179,6 +214,70 @@ export default async function CustomerReportPage({
             </p>
           </div>
         ))}
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">
+              Costs — {band.label}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {marginPct === null
+                ? "No payments recorded in this period, so no margin can be calculated."
+                : `Gross margin ${marginPct.toFixed(1)}% after ${formatCurrency(
+                    costsTotal,
+                    company.currency
+                  )} of recorded costs.`}
+            </p>
+          </div>
+          <Link
+            href="/dashboard/expenses"
+            className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
+          >
+            <Coins className="h-4 w-4" />
+            Manage expenses
+          </Link>
+        </div>
+
+        {summary.expenses.byCategory.length > 0 ? (
+          <div className="mt-4 space-y-2">
+            {summary.expenses.byCategory.map((category) => {
+              const share =
+                costsTotal > 0 ? (category.amount / costsTotal) * 100 : 0
+              return (
+                <div key={category.category} className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">{category.category}</span>
+                    <span className="text-muted-foreground">
+                      {formatCurrency(category.amount, company.currency)}
+                      <span className="ml-2 text-xs">
+                        {share.toFixed(0)}%
+                      </span>
+                    </span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-orange-500"
+                      style={{ width: `${Math.max(share, 1)}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-muted-foreground">
+            No costs recorded in this period.{" "}
+            <Link
+              href="/dashboard/expenses"
+              className="underline underline-offset-2"
+            >
+              Add expenses
+            </Link>{" "}
+            to see your gross profit and margin here.
+          </p>
+        )}
       </div>
 
       <div className="rounded-lg border border-border bg-card shadow-sm">
@@ -265,7 +364,8 @@ export default async function CustomerReportPage({
         <p>
           Quoted excludes drafts and rejected quotes. Invoiced excludes drafts.
           Outstanding is the value of sent and overdue invoices created in the
-          period. Paid counts payments received in the period.
+          period. Paid counts payments received in the period. Costs are business
+          expenses incurred in the period; gross profit is paid less costs.
         </p>
       </div>
     </div>
