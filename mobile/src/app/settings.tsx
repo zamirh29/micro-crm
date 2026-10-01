@@ -27,7 +27,7 @@ export default function SettingsScreen() {
       <Text style={styles.sectionTitle}>Account</Text>
       <View style={styles.card}>
         <Text style={styles.label}>Signed in as</Text>
-        <Text style={styles.value}>{session?.user.email ?? '—'}</Text>
+        <Text style={styles.value}>{session?.user.email ?? 'â€”'}</Text>
       </View>
 
       <Text style={styles.sectionTitle}>Server</Text>
@@ -41,7 +41,7 @@ export default function SettingsScreen() {
       </Pressable>
 
       <Text style={styles.footer}>
-        MicroCRM v{Constants.expoConfig?.version ?? '1.0.5'}
+        MicroCRM v{Constants.expoConfig?.version ?? '1.0.6'}
       </Text>
     </ScrollView>
   );
