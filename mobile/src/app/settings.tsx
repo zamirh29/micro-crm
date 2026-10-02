@@ -5,6 +5,13 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { API_URL } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 
+// `nativeAppVersion` is the version baked into the installed build, which is the
+// real answer under EAS remote versioning. `expoConfig.version` is only a
+// fallback because it reflects app.json, which remote versioning ignores.
+// No hardcoded fallback: a stale literal would show the wrong build forever.
+const APP_VERSION =
+  Constants.nativeAppVersion ?? Constants.expoConfig?.version ?? 'dev';
+
 export default function SettingsScreen() {
   const { session, signOut } = useSession();
 
@@ -40,9 +47,7 @@ export default function SettingsScreen() {
         <Text style={styles.signOutText}>Sign out</Text>
       </Pressable>
 
-      <Text style={styles.footer}>
-        MicroCRM v{Constants.expoConfig?.version ?? '1.0.6'}
-      </Text>
+      <Text style={styles.footer}>MicroCRM v{APP_VERSION}</Text>
     </ScrollView>
   );
 }

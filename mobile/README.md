@@ -88,6 +88,31 @@ certificate.
 To ship JavaScript-only fixes to an installed build without rebuilding, use
 `npx eas-cli@latest update`.
 
+## Versioning
+
+`eas.json` sets `cli.appVersionSource: "remote"`, so **EAS owns the app version and
+build number**. `app.json` deliberately has no `versionCode`, and editing its `version`
+will not change what a build ships — that was the bug behind build `238832ae` reporting
+`appBuildVersion: 1` while `app.json` claimed `7`.
+
+- Bump the version for a release with
+  `npx eas-cli@latest build:version:set --version 1.0.7`, then build. `autoIncrement`
+  is on for both `preview` and `production`, so the build number rises on every build
+  and Play's "strictly increasing `versionCode`" rule is satisfied automatically.
+  Preview builds share that counter with production, which leaves gaps in the sequence.
+  That is harmless — Play requires monotonic, not gapless.
+- Check what the server currently thinks the build number is with
+  `npx eas-cli@latest build:version:get --platform android` (the `--platform` flag is
+  required in non-interactive mode), and what a specific build actually contained with
+  `npx eas-cli@latest build:view <build-id> --json` (look at `appVersion` and
+  `appBuildVersion`).
+- The Settings screen reads `Constants.nativeAppVersion`, so it reports the real
+  installed build rather than a value that can drift.
+- If you ever switch `appVersionSource` to `local`, `autoIncrement` stops applying and
+  both fields must be maintained by hand in `app.json` (`version` and
+  `android.versionCode`), which is how duplicate Play build numbers happen. Only do this
+  deliberately.
+
 ## Behaviour notes
 
 - Sessions come from Supabase; the access token is sent as a `Bearer` token to `/api/*`.

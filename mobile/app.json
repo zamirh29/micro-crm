@@ -13,7 +13,6 @@
     },
     "android": {
       "package": "com.dtmstechsolutions.microcrm",
-      "versionCode": 7,
       "adaptiveIcon": {
         "backgroundColor": "#4F46E5",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
