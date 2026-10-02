@@ -90,28 +90,36 @@ To ship JavaScript-only fixes to an installed build without rebuilding, use
 
 ## Versioning
 
-`eas.json` sets `cli.appVersionSource: "remote"`, so **EAS owns the app version and
-build number**. `app.json` deliberately has no `versionCode`, and editing its `version`
-will not change what a build ships — that was the bug behind build `238832ae` reporting
-`appBuildVersion: 1` while `app.json` claimed `7`.
+Two different fields, two different owners. This split is verified behaviour, not
+assumption — build `238832ae` reported `appVersion: 1.0.6` (matching `app.json`) but
+`appBuildVersion: 1` while `app.json` claimed `versionCode: 7`.
 
-- Bump the version for a release with
-  `npx eas-cli@latest build:version:set --version 1.0.7`, then build. `autoIncrement`
-  is on for both `preview` and `production`, so the build number rises on every build
-  and Play's "strictly increasing `versionCode`" rule is satisfied automatically.
-  Preview builds share that counter with production, which leaves gaps in the sequence.
-  That is harmless — Play requires monotonic, not gapless.
-- Check what the server currently thinks the build number is with
-  `npx eas-cli@latest build:version:get --platform android` (the `--platform` flag is
-  required in non-interactive mode), and what a specific build actually contained with
-  `npx eas-cli@latest build:view <build-id> --json` (look at `appVersion` and
-  `appBuildVersion`).
-- The Settings screen reads `Constants.nativeAppVersion`, so it reports the real
-  installed build rather than a value that can drift.
+| Field | Source | Change it with |
+| --- | --- | --- |
+| `version` (Android `versionName`, iOS `CFBundleShortVersionString`) | `app.json` | edit `app.json`, commit, build |
+| Android `versionCode` (iOS build number) | EAS, via `cli.appVersionSource: "remote"` | nothing — `autoIncrement` does it |
+
+- To ship a new version, edit `expo.version` in `app.json`, commit, and build. Do not add
+  `android.versionCode` to `app.json`: it is silently ignored under remote versioning, and
+  a plausible-looking value there is exactly what hid the `238832ae` mismatch.
+- `autoIncrement` is on for both `preview` and `production`, so every build consumes the
+  next build number and Play's "strictly increasing `versionCode`" rule is satisfied
+  automatically. Preview and production share one counter, which leaves gaps — harmless,
+  since Play requires monotonic, not gapless.
+- `npx eas-cli@latest build:version:set` is **not** the way to bump the version here. It
+  manages the remote build number, and the installed CLI prompts for input rather than
+  accepting a `--version` flag.
+- Inspect what the server currently thinks the build number is with
+  `npx eas-cli@latest build:version:get --platform android` (it reports only `versionCode`;
+  the `--platform` flag is required non-interactively). Inspect what a build actually
+  shipped with `npx eas-cli@latest build:view <build-id> --json` — check `appVersion`,
+  `appBuildVersion` and `gitCommitHash`, which is the surest way to confirm a build came
+  from the commit you expected.
+- The Settings screen reads `Constants.nativeAppVersion`, so it reports the version baked
+  into the installed binary rather than a value read from `app.json` that could drift.
 - If you ever switch `appVersionSource` to `local`, `autoIncrement` stops applying and
-  both fields must be maintained by hand in `app.json` (`version` and
-  `android.versionCode`), which is how duplicate Play build numbers happen. Only do this
-  deliberately.
+  the build number must be maintained by hand in `app.json`, which is how duplicate Play
+  build numbers happen. Only do this deliberately.
 
 ## Behaviour notes
 
