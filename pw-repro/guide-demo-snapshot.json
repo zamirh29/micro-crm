@@ -1,0 +1,17 @@
+{
+  "org": {
+    "id": "8cf82a2a-96ad-4ec4-a334-25bf3ce4bb24",
+    "name": "pwa-test-1301678156@example.com",
+    "email": null,
+    "phone": null,
+    "website": null,
+    "address": null
+  },
+  "subs": [
+    {
+      "id": "c0ae0bea-d4be-4594-a26d-82ba51c558ae",
+      "plan": "pro",
+      "status": "active"
+    }
+  ]
+}
