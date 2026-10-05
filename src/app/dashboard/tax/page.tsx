@@ -223,8 +223,9 @@ export default async function TaxReportPage() {
             England, Wales and Northern Ireland. Personal Allowance £12,570,
             tapered above £100,000. Bands frozen to April 2028.
           </p>
-          <div className="mt-4 overflow-hidden rounded-md border border-border">
-            <table className="w-full text-sm">
+<div className="mt-4 overflow-hidden rounded-md border border-border">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
               <tbody className="divide-y divide-border">
                 {tax.rows.map((row) => (
                   <tr key={row.band.label}>
@@ -250,6 +251,7 @@ export default async function TaxReportPage() {
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Estimate only — paid invoices less the expenses recorded in

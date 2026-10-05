@@ -103,7 +103,8 @@ export default async function ExpensesPage({
             No expenses recorded for {monthLabel(month)} yet.
           </p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50 text-left">
                 <th className="px-4 py-2.5 font-medium">Date</th>
@@ -139,6 +140,7 @@ export default async function ExpensesPage({
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

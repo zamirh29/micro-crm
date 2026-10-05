@@ -24,12 +24,16 @@ import { cn } from "@/lib/utils"
 import { signOut } from "@/app/dashboard/actions"
 
 interface SidebarProps {
+  open?: boolean
+  onClose?: () => void
   isSuperAdmin?: boolean
   companyName?: string
   companyLogo?: string | null
 }
 
 export default function Sidebar({
+  open = false,
+  onClose,
   isSuperAdmin = false,
   companyName = "MicroCRM",
   companyLogo,
@@ -79,7 +83,22 @@ export default function Sidebar({
   ]
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+    <>
+      {open && (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={onClose}
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+        />
+      )}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform duration-200 ease-out lg:z-30 lg:translate-x-0",
+          "pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]",
+          open ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
       <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
         {companyLogo ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -104,6 +123,7 @@ export default function Sidebar({
             <Link
               key={item.href}
               href={item.href}
+              onClick={onClose}
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 isActive
@@ -122,6 +142,7 @@ export default function Sidebar({
         <form action={signOut}>
           <button
             type="submit"
+            onClick={onClose}
             className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             <LogOut className="h-4 w-4" />
@@ -129,6 +150,7 @@ export default function Sidebar({
           </button>
         </form>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }

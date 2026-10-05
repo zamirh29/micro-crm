@@ -30,8 +30,9 @@ export default async function RemindersPage() {
         </Link>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-background">
-        <table className="min-w-full divide-y divide-border">
+<div className="overflow-hidden rounded-lg border border-border bg-background">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-border">
           <thead className="bg-muted/50">
             <tr>
               <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
@@ -86,6 +87,7 @@ Customer
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )

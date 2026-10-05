@@ -44,6 +44,12 @@ export default function LandingPage() {
           <span className="text-lg font-bold tracking-tight">MicroCRM</span>
           <nav className="flex items-center gap-4">
             <Link
+              href="/guide"
+              className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:block"
+            >
+              Product Tour
+            </Link>
+            <Link
               href="/login"
               className="text-sm font-medium text-muted-foreground hover:text-foreground"
             >
@@ -85,6 +91,14 @@ export default function LandingPage() {
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
             90 days free on the Free plan. First 3 months of Pro on us. Cancel anytime.
+          </p>
+          <p className="mt-2 text-sm">
+            <Link
+              href="/guide"
+              className="font-medium text-primary hover:underline"
+            >
+              Take the product tour
+            </Link>
           </p>
         </section>
 

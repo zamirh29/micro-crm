@@ -78,11 +78,11 @@ export default async function InvoiceDetailPage({
               <img
                 src={company.logoData}
                 alt={company.name}
-                className="h-14 w-14 rounded-md object-contain"
+                className="h-21 w-21 rounded-md object-contain"
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-md bg-primary/10">
-                <span className="text-lg font-bold text-primary">
+              <div className="flex h-21 w-21 items-center justify-center rounded-md bg-primary/10">
+                <span className="text-2xl font-bold text-primary">
                   {company.name.charAt(0).toUpperCase()}
                 </span>
               </div>

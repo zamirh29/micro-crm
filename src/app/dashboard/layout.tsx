@@ -4,8 +4,7 @@ import { isSuperAdmin } from "@/lib/admin"
 import { getImpersonation } from "@/lib/impersonation"
 import { getCompanyProfile } from "@/lib/company"
 import { exitImpersonation } from "@/app/dashboard/admin/actions"
-import Sidebar from "@/components/sidebar"
-import Header from "@/components/header"
+import DashboardShell from "@/components/dashboard-shell"
 
 export default async function DashboardLayout({
   children,
@@ -35,15 +34,14 @@ export default async function DashboardLayout({
   const impersonating = impersonation !== null && impersonation.userId === user.id
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar
-        isSuperAdmin={isSuperAdmin(user.email)}
-        companyName={company?.name}
-        companyLogo={company?.logoData}
-      />
-      <div className="flex flex-1 flex-col overflow-hidden pl-64">
-        {impersonating && impersonation && (
-          <div className="flex items-center justify-between gap-4 border-b border-amber-300 bg-amber-50 px-6 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+    <DashboardShell
+      userEmail={user.email ?? ""}
+      isSuperAdmin={isSuperAdmin(user.email)}
+      companyName={company?.name}
+      companyLogo={company?.logoData}
+      banner={
+        impersonating && impersonation ? (
+          <div className="flex items-center justify-between gap-4 border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900 sm:px-6 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
             <p className="truncate">
               Viewing{" "}
               <span className="font-semibold">{impersonation.email}</span>
@@ -58,10 +56,10 @@ export default async function DashboardLayout({
               </button>
             </form>
           </div>
-        )}
-        <Header userEmail={user.email ?? ""} />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
-      </div>
-    </div>
+        ) : null
+      }
+    >
+      {children}
+    </DashboardShell>
   )
 }

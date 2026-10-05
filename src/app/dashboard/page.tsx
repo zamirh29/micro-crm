@@ -76,8 +76,14 @@ export default async function DashboardPage() {
       "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
   }
 
-  const userName =
-    user.email?.split("@")[0] ?? "there"
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .maybeSingle()
+
+  // Prefer the name from Settings; fall back to the email local part.
+  const userName = profile?.full_name?.trim().split(/\s+/)[0] || user.email?.split("@")[0] || "there"
 
   return (
     <div className="space-y-8">

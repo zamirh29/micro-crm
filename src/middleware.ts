@@ -52,7 +52,8 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname === "/" ||
     request.nextUrl.pathname === "/offline" ||
     request.nextUrl.pathname.startsWith("/public") ||
-    request.nextUrl.pathname.startsWith("/pricing")
+    request.nextUrl.pathname.startsWith("/pricing") ||
+    request.nextUrl.pathname.startsWith("/guide")
 
   if (!user && !isAuthPage && !isPublicPage && !isResetPage) {
     const url = request.nextUrl.clone()
