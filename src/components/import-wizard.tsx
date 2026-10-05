@@ -52,6 +52,36 @@ const ACCEPT = ".xlsx,.xlsm,.csv"
 const MAX_FILES = 200
 const COMMIT_CHUNK = 1500
 
+// The hosting platform rejects any single request body over roughly 4MB with an
+// opaque 413, long before the server sees it. Measured in production: 4MB
+// reached the app, 4.4MB did not. Stay under that ceiling ourselves so a big
+// folder is split across several requests instead of failing outright.
+const MAX_REQUEST_BYTES = 3.5 * 1024 * 1024
+
+// One file can still be too big to fit in any request, so it is refused up front
+// with a reason the user can act on.
+const MAX_FILE_BYTES = MAX_REQUEST_BYTES
+
+/** Split files into request-sized groups, never splitting a single file. */
+function batchBySize(files: File[]): File[][] {
+  const batches: File[][] = []
+  let current: File[] = []
+  let currentBytes = 0
+
+  for (const file of files) {
+    if (current.length > 0 && currentBytes + file.size > MAX_REQUEST_BYTES) {
+      batches.push(current)
+      current = []
+      currentBytes = 0
+    }
+    current.push(file)
+    currentBytes += file.size
+  }
+
+  if (current.length > 0) batches.push(current)
+  return batches
+}
+
 interface RejectedFile {
   fileName: string
   reason: string
@@ -267,13 +297,29 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
 
   const uploadFiles = useCallback(
     async (incoming: File[], forKind: ImportKind, pence: boolean) => {
-      const usable = incoming.filter((file) => accepted(file.name))
+      const supported = incoming.filter((file) => accepted(file.name))
       const ignored: RejectedFile[] = incoming
         .filter((file) => !accepted(file.name))
         .map((file) => ({ fileName: file.name, reason: "Not an .xlsx or .csv file" }))
 
+      // Reported rather than dropped silently: a file this big can never fit in
+      // one request, so it needs splitting by the user.
+      const oversized = supported.filter((file) => file.size > MAX_FILE_BYTES)
+      for (const file of oversized) {
+        ignored.push({
+          fileName: file.name,
+          reason: `Too large (${(file.size / 1024 / 1024).toFixed(1)}MB) — split it into smaller files`,
+        })
+      }
+      const usable = supported.filter((file) => file.size <= MAX_FILE_BYTES)
+
       if (usable.length === 0) {
-        setError("None of those files are .xlsx or .csv files")
+        setError(
+          oversized.length > 0
+            ? "Those files are too large to upload. Split them into smaller spreadsheets and try again."
+            : "None of those files are .xlsx or .csv files"
+        )
+        setRejected(ignored)
         return
       }
 
@@ -282,23 +328,42 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
       setProgress(`Reading ${usable.length} file${usable.length === 1 ? "" : "s"}…`)
 
       try {
-        const form = new FormData()
-        for (const file of usable) form.append("files", file)
-        form.append("kind", forKind)
-        form.append("inPence", String(pence))
+        const batches = batchBySize(usable)
+        const allSheets: ParsedSheetResponse[] = []
+        const allRejected: RejectedFile[] = [...ignored]
+        let nextId = 0
 
-        const res = await fetch("/api/import/parse", { method: "POST", body: form })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error ?? "Could not read those files")
+        for (const [batchIndex, batch] of batches.entries()) {
+          if (batches.length > 1) {
+            setProgress(
+              `Reading files ${batchIndex + 1} of ${batches.length}…`
+            )
+          }
 
-        const parsed = (data.sheets ?? []) as ParsedSheetResponse[]
+          const form = new FormData()
+          for (const file of batch) form.append("files", file)
+          form.append("kind", forKind)
+          form.append("inPence", String(pence))
+
+          const res = await fetch("/api/import/parse", { method: "POST", body: form })
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error ?? "Could not read those files")
+
+          // The server ids only need to be unique within one response, so they
+          // have to be re-based once several responses are merged.
+          for (const sheet of (data.sheets ?? []) as ParsedSheetResponse[]) {
+            allSheets.push({ ...sheet, id: nextId++ })
+          }
+          allRejected.push(...((data.rejected ?? []) as RejectedFile[]))
+        }
+
         setSheets(
-          parsed.map((sheet) => ({
+          allSheets.map((sheet) => ({
             ...sheet,
             map: sheet.autoDetected ?? {},
           }))
         )
-        setRejected([...ignored, ...((data.rejected ?? []) as RejectedFile[])])
+        setRejected(allRejected)
       } catch (e) {
         setError(e instanceof Error ? e.message : "Could not read those files")
       } finally {

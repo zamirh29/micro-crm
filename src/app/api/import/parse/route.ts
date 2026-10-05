@@ -13,19 +13,27 @@ import {
   type ImportKind,
 } from "@/lib/import/parse"
 
-// Uploads are parsed in memory; keep a ceiling so a huge file cannot exhaust
-// the serverless function.
-const MAX_BYTES = 10 * 1024 * 1024
+// Uploads are parsed in memory, and the hosting platform drops any request over
+// roughly 4MB with an opaque 413. Measured in production: 4MB reached the app,
+// 4.4MB did not. Enforcing the same ceiling here means the app refuses with a
+// readable message instead of the platform failing the request. The client
+// splits a folder across several requests to stay under this.
+const MAX_REQUEST_BYTES = 3.5 * 1024 * 1024
 
 // A directory drop can pick up hundreds of files, so bound the batch as well as
 // each individual file.
 const MAX_FILES = 200
-const MAX_TOTAL_BYTES = 60 * 1024 * 1024
+const MAX_BYTES = MAX_REQUEST_BYTES
+const MAX_TOTAL_BYTES = MAX_REQUEST_BYTES
 
 // Rows kept per file. Drafts are built from exactly this many rows so the
 // returned grid and the preview can never disagree: re-parsing a corrected
 // column map then still sees every row the user was shown.
-const MAX_ROWS = 10000
+//
+// Capped well below what a 10k-row grid would weigh, because re-parsing posts
+// that grid back as JSON and a wide sheet can otherwise approach the request
+// ceiling on its own.
+const MAX_ROWS = 5000
 
 // The client re-posts the stored grid to change the column mapping, so this
 // ceiling has to comfortably exceed MAX_ROWS for the worst single file.
@@ -71,6 +79,16 @@ export async function POST(request: Request) {
 
   // Second call: re-shape an already-uploaded grid with a corrected column map.
   if (contentType.includes("application/json")) {
+    // A wide sheet at MAX_ROWS can approach the platform ceiling as JSON, which
+    // would fail with an opaque 413, so refuse it here where we can explain.
+    const declared = Number(request.headers.get("content-length") ?? 0)
+    if (declared > MAX_REQUEST_BYTES) {
+      return jsonError(
+        "That file is too wide or too long to re-map. Split it into smaller spreadsheets.",
+        400
+      )
+    }
+
     const parsed = reparseSchema.safeParse(await request.json().catch(() => null))
     if (!parsed.success) return jsonError("Invalid re-parse request", 400)
 
@@ -112,7 +130,10 @@ export async function POST(request: Request) {
   let totalBytes = 0
   for (const file of uploads) {
     if (file.size > MAX_BYTES) {
-      return jsonError(`${file.name} is larger than 10MB`, 400)
+      return jsonError(
+        `${file.name} is too large (${(file.size / 1024 / 1024).toFixed(1)}MB, limit is ${Math.floor(MAX_BYTES / 1024 / 1024)}MB). Split it into smaller files.`,
+        400
+      )
     }
     const name = file.name.toLowerCase()
     if (!ALLOWED_EXTENSIONS.some((ext) => name.endsWith(ext))) {
@@ -121,7 +142,10 @@ export async function POST(request: Request) {
     totalBytes += file.size
   }
   if (totalBytes > MAX_TOTAL_BYTES) {
-    return jsonError("That selection of files is too large. Try fewer at a time.", 400)
+    return jsonError(
+      "That selection is too large for one upload. Try fewer files at a time.",
+      400
+    )
   }
 
   const sheets: ParsedSheet[] = []
