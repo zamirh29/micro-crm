@@ -41,6 +41,11 @@ const MAX_GRID_ROWS = MAX_ROWS + 100
 
 const ALLOWED_EXTENSIONS = [".xlsx", ".xlsm", ".csv"]
 
+/** One decimal place, so a 3.5MB limit is not reported as "3MB". */
+function megabytes(bytes: number): string {
+  return (bytes / 1024 / 1024).toFixed(1).replace(/\.0$/, "")
+}
+
 const reparseSchema = z.object({
   kind: z.enum(["invoice", "quote"]),
   map: z.record(z.string(), z.number().int().nonnegative()),
@@ -131,7 +136,7 @@ export async function POST(request: Request) {
   for (const file of uploads) {
     if (file.size > MAX_BYTES) {
       return jsonError(
-        `${file.name} is too large (${(file.size / 1024 / 1024).toFixed(1)}MB, limit is ${Math.floor(MAX_BYTES / 1024 / 1024)}MB). Split it into smaller files.`,
+        `${file.name} is too large (${(file.size / 1024 / 1024).toFixed(1)}MB, limit is ${megabytes(MAX_BYTES)}MB). Split it into smaller files.`,
         400
       )
     }

@@ -10,7 +10,33 @@ const fixtures = require("./impersonation-fixtures");
 
 const BASE = process.env.BASE_URL || "https://crm.dtmstechsolutions.co.uk";
 
-const SIZES_MB = [1, 2, 3, 4, 4.4, 4.6, 5, 8, 10, 12];
+const SIZES_MB = [1, 2, 3, 3.5, 4, 4.4, 4.6, 5, 8, 10];
+
+/**
+ * Sign in from a clean slate. Production login intermittently bounces back to
+ * /login when a stale session cookie is present, so clear cookies first and
+ * retry once rather than leaving a confusing timeout.
+ */
+async function signIn(page, state) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    await page.context().clearCookies();
+    await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.locator("#email").fill(state.email);
+    await page.locator("#password").fill(state.password);
+
+    const landed = page
+      .waitForURL(/dashboard/, { timeout: 45000 })
+      .then(() => true)
+      .catch(() => false);
+    await page.getByRole("button", { name: /sign in/i }).first().click();
+    if (await landed) {
+      console.log(`signed in (attempt ${attempt})`);
+      return;
+    }
+    console.log(`sign-in attempt ${attempt} bounced back to ${page.url()}`);
+  }
+  throw new Error("could not sign in to production");
+}
 
 async function main() {
   const sb = fixtures.getClient();
@@ -30,13 +56,7 @@ async function main() {
   const page = await browser.newPage();
 
   try {
-    await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await page.locator("#email").fill(state.email);
-    await page.locator("#password").fill(state.password);
-    await Promise.all([
-      page.waitForURL(/dashboard/, { timeout: 90000 }),
-      page.getByRole("button", { name: /sign in/i }).first().click(),
-    ]);
+    await signIn(page, state);
 
     for (const mb of SIZES_MB) {
       const outcome = await page.evaluate(async (sizeMb) => {
