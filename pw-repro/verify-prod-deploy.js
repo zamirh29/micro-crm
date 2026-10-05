@@ -51,13 +51,24 @@ async function main() {
   });
 
   try {
-    await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await page.locator("#email").fill(state.email);
-    await page.locator("#password").fill(state.password);
-    await Promise.all([
-      page.waitForURL(/dashboard/, { timeout: 90000 }),
-      page.getByRole("button", { name: /sign in/i }).first().click(),
-    ]);
+    // Production intermittently bounces back to /login with a stale session, so
+    // clear cookies and retry rather than failing on an unexplained timeout.
+    let signedIn = false;
+    for (let attempt = 1; attempt <= 3 && !signedIn; attempt++) {
+      await page.context().clearCookies();
+      await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded", timeout: 60000 });
+      await page.locator("#email").fill(state.email);
+      await page.locator("#password").fill(state.password);
+
+      const landed = page
+        .waitForURL(/dashboard/, { timeout: 45000 })
+        .then(() => true)
+        .catch(() => false);
+      await page.getByRole("button", { name: /sign in/i }).first().click();
+      signedIn = await landed;
+      if (!signedIn) console.log(`sign-in attempt ${attempt} bounced to ${page.url()}`);
+    }
+    if (!signedIn) throw new Error("could not sign in to production");
     console.log("signed in");
 
     await page.goto(`${BASE}/dashboard/import`, { waitUntil: "domcontentloaded", timeout: 60000 });
