@@ -3,6 +3,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { ActionBar } from '@/components/action-bar';
 import { ScreenState } from '@/components/screen-state';
 import { StatusChip } from '@/components/status-chip';
 import { api, useApi } from '@/lib/api';
@@ -145,7 +146,7 @@ export default function QuoteDetailScreen() {
             ) : null}
           </ScrollView>
 
-          <View style={styles.actions}>
+          <ActionBar>
             <Pressable
               style={[styles.button, styles.secondaryButton]}
               onPress={edit}
@@ -182,7 +183,7 @@ export default function QuoteDetailScreen() {
                 </Text>
               </Pressable>
             )}
-          </View>
+          </ActionBar>
         </View>
       )}
     </ScreenState>
@@ -298,14 +299,6 @@ const styles = StyleSheet.create({
   rowValueEmphasis: {
     fontSize: 16,
     fontWeight: '800',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 10,
-    padding: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e5e7eb',
-    backgroundColor: '#ffffff',
   },
   button: {
     flex: 1,

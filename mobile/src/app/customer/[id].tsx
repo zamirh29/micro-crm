@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { ActionBar } from '@/components/action-bar';
 import { ScreenState } from '@/components/screen-state';
 import { StatusChip } from '@/components/status-chip';
 import { api, useApi } from '@/lib/api';
@@ -172,7 +173,7 @@ export default function CustomerDetailScreen() {
         </ScrollView>
       )}
 
-      <View style={styles.actions}>
+      <ActionBar>
         {editing ? (
           <>
             <Pressable
@@ -193,7 +194,7 @@ export default function CustomerDetailScreen() {
             <Text style={styles.primaryText}>Edit customer</Text>
           </Pressable>
         )}
-      </View>
+      </ActionBar>
     </ScreenState>
   );
 }
@@ -376,14 +377,6 @@ const styles = StyleSheet.create({
   statusChipTextActive: {
     color: '#ffffff',
     fontWeight: '600',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 10,
-    padding: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e5e7eb',
-    backgroundColor: '#ffffff',
   },
   button: {
     flex: 1,

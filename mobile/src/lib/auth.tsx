@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 
 import { setAccessToken } from '@/lib/api';
+import { initializePurchases, signOutFromPurchases } from '@/lib/purchases';
 import { supabase } from '@/lib/supabase';
 
 interface AuthContextValue {
@@ -51,12 +52,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const userId = session?.user?.id ?? null;
+
+  // Keep the RevenueCat customer aligned with the signed-in Supabase user so that
+  // purchases are attributed to the account the backend reads.
+  useEffect(() => {
+    if (!userId) return;
+    initializePurchases(userId).catch(() => {
+      // Store billing is additive: a failure here must not block the app.
+    });
+  }, [userId]);
+
   const signIn = async (email: string, password: string): Promise<string | null> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return error ? error.message : null;
   };
 
   const signOut = async () => {
+    await signOutFromPurchases();
     await supabase.auth.signOut();
   };
 
