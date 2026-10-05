@@ -7,6 +7,8 @@ import type { InvoiceStatus, QuoteStatus } from "@/types/database"
 export interface ImportRowInput {
   /** Sheet row this document came from, for error reporting. */
   rowNumber?: number
+  /** Uploaded file this row came from, for error reporting. */
+  sourceFile?: string
   originalNumber: string
   customerName: string
   customerEmail: string
@@ -30,7 +32,7 @@ export interface ImportOutcome {
   createdContacts: number
   createdInvoices: number
   createdQuotes: number
-  errors: { rowNumber: number; originalNumber: string; reason: string }[]
+  errors: { rowNumber: number; originalNumber: string; sourceFile?: string; reason: string }[]
 }
 
 const INVOICE_FLOOR = 100001
@@ -77,6 +79,20 @@ function buildLines(
   const subtotal = lines.reduce((sum, line) => sum + line.total, 0)
   const taxAmount = Math.round((subtotal * taxRate) / 100)
   return { lines, subtotal, taxAmount, total: subtotal + taxAmount }
+}
+
+/** Gross total for a row, matching how buildLines will round it. */
+function rowTotal(row: ImportRowInput, taxRate: number): number {
+  const subtotal = row.items.reduce((sum, item) => {
+    const quantity =
+      Number.isFinite(item.quantity) && item.quantity > 0
+        ? Math.max(1, Math.round(item.quantity))
+        : 1
+    const unitPrice = Math.round(Number.isFinite(item.unitPrice) ? item.unitPrice : 0)
+    return sum + unitPrice * quantity
+  }, 0)
+
+  return subtotal + Math.round((subtotal * taxRate) / 100)
 }
 
 function normaliseName(name: string): string {
@@ -222,6 +238,7 @@ export async function commitImport(
       outcome.errors.push({
         rowNumber: row.rowNumber ?? 0,
         originalNumber: row.originalNumber,
+        sourceFile: row.sourceFile,
         reason,
       })
       return false
@@ -257,7 +274,7 @@ export async function commitImport(
 
   const { data: existingDocs } = await supabase
     .from(table)
-    .select("number")
+    .select("number, original_number")
     .eq("org_id", orgId)
 
   let sequence = nextSequence(
@@ -266,7 +283,54 @@ export async function commitImport(
     isInvoice ? INVOICE_FLOOR : QUOTE_FLOOR
   )
 
-  for (const row of ordered) {
+  // Guard against importing the same original number twice. It can already
+  // exist from an earlier run, or a directory drop can contain the same
+  // reference in two files. Previously a repeat would silently create a second
+  // document, which matters much more when a whole folder goes in at once.
+  const alreadyImported = new Set(
+    (existingDocs ?? [])
+      .map((doc) => (doc.original_number ?? "").trim().toLowerCase())
+      .filter(Boolean)
+  )
+
+  // A repeated original number is usually legitimate: legacy systems often
+  // restart numbering each year, so 2019 and 2020 can both hold INV-001 and they
+  // must stay two separate documents. A repeat that also agrees on date and
+  // total is the same document listed twice, typically a folder added twice,
+  // so that one is reported as skipped instead of silently duplicating.
+  const seenInBatch = new Set<string>()
+  const importable = ordered.filter((row) => {
+    const key = (row.originalNumber ?? "").trim().toLowerCase()
+    if (!key) return true
+
+    if (alreadyImported.has(key)) {
+      outcome.skipped++
+      outcome.errors.push({
+        rowNumber: row.rowNumber ?? 0,
+        originalNumber: row.originalNumber,
+        sourceFile: row.sourceFile,
+        reason: "An invoice/quote with this original number already exists",
+      })
+      return false
+    }
+
+    const fingerprint = `${key}|${row.documentDate ?? ""}|${rowTotal(row, taxRate)}`
+    if (seenInBatch.has(fingerprint)) {
+      outcome.skipped++
+      outcome.errors.push({
+        rowNumber: row.rowNumber ?? 0,
+        originalNumber: row.originalNumber,
+        sourceFile: row.sourceFile,
+        reason: "The same number, date and total appear more than once in this selection",
+      })
+      return false
+    }
+
+    seenInBatch.add(fingerprint)
+    return true
+  })
+
+  for (const row of importable) {
     try {
       // ---- resolve the customer -----------------------------------------
       let contactId = contactIds.get(cacheKey(row))
@@ -384,6 +448,7 @@ export async function commitImport(
       outcome.errors.push({
         rowNumber: row.rowNumber ?? 0,
         originalNumber: row.originalNumber,
+        sourceFile: row.sourceFile,
         reason: e instanceof Error ? e.message : "Could not create this document",
       })
     }
@@ -398,6 +463,7 @@ export function draftsToRows(drafts: ImportDraft[]): ImportRowInput[] {
     .filter((draft) => !draft.error)
     .map((draft) => ({
       rowNumber: draft.rowNumber,
+      sourceFile: draft.sourceFile,
       originalNumber: draft.originalNumber,
       customerName: draft.customerName,
       customerEmail: draft.customerEmail,

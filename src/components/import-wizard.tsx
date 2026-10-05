@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -11,6 +11,8 @@ import {
   CheckCircle2,
   ArrowLeft,
   Check,
+  FolderOpen,
+  Files,
 } from "lucide-react"
 import {
   type ImportField,
@@ -46,160 +48,415 @@ const FIELD_OPTIONS: FieldOption[] = [
   { key: "currency", label: "Currency", hint: "Defaults to GBP" },
 ]
 
+const ACCEPT = ".xlsx,.xlsm,.csv"
+const MAX_FILES = 200
+const COMMIT_CHUNK = 1500
+
+interface RejectedFile {
+  fileName: string
+  reason: string
+}
+
+interface SheetState {
+  id: number
+  fileName: string
+  headers: string[]
+  grid: string[][]
+  map: ColumnMap
+  drafts: ImportDraft[]
+  truncated: boolean
+}
+
+interface ParsedSheetResponse extends Omit<SheetState, "map"> {
+  autoDetected: ColumnMap
+}
+
 interface CommitOutcome {
   created: number
   skipped: number
   createdContacts: number
   createdInvoices: number
   createdQuotes: number
-  errors: { rowNumber: number; originalNumber: string; reason: string }[]
+  errors: {
+    rowNumber: number
+    originalNumber: string
+    sourceFile?: string
+    reason: string
+  }[]
+}
+
+interface DroppedEntry {
+  isFile: boolean
+  isDirectory: boolean
+  name: string
+  file?: (onFile: (f: File) => void, onError?: (e: unknown) => void) => void
+  createReader?: () => {
+    readEntries: (
+      onEntries: (entries: DroppedEntry[]) => void,
+      onError?: (e: unknown) => void
+    ) => void
+  }
+}
+
+function signature(headers: string[]): string {
+  return headers.map((h) => h.trim().toLowerCase()).join("")
+}
+
+function accepted(name: string): boolean {
+  const lower = name.toLowerCase()
+  return lower.endsWith(".xlsx") || lower.endsWith(".xlsm") || lower.endsWith(".csv")
+}
+
+function readEntryFile(entry: DroppedEntry): Promise<File> {
+  return new Promise((resolve, reject) => {
+    entry.file?.(resolve, () => reject(new Error(`Could not read ${entry.name}`)))
+  })
+}
+
+function readBatch(reader: {
+  readEntries: (
+    onEntries: (entries: DroppedEntry[]) => void,
+    onError?: (e: unknown) => void
+  ) => void
+}): Promise<DroppedEntry[]> {
+  return new Promise((resolve, reject) => {
+    reader.readEntries(resolve, () => reject(new Error("Could not read folder")))
+  })
+}
+
+async function walk(entry: DroppedEntry, prefix: string, out: File[]) {
+  if (entry.isFile) {
+    try {
+      const file = await readEntryFile(entry)
+      // Re-wrap with the folder path so two files that share a name in
+      // different years stay distinguishable in previews and error reports.
+      const name = `${prefix}${file.name}`.slice(0, 240)
+      out.push(name === file.name ? file : new File([file], name, { type: file.type }))
+    } catch {
+      return
+    }
+    return
+  }
+
+  if (!entry.isDirectory || !entry.createReader) return
+
+  const reader = entry.createReader()
+  const nextPrefix = `${prefix}${entry.name}/`
+
+  // readEntries returns at most 100 entries per call, so it has to be drained
+  // until it hands back an empty batch.
+  for (;;) {
+    const batch = await readBatch(reader)
+    if (batch.length === 0) break
+    for (const child of batch) await walk(child, nextPrefix, out)
+  }
+}
+
+async function filesFromDrop(transfer: DataTransfer): Promise<File[]> {
+  const items = Array.from(transfer.items ?? [])
+  const entries = items
+    .map((item) =>
+      typeof (item as DataTransferItem).webkitGetAsEntry === "function"
+        ? ((item as DataTransferItem & { webkitGetAsEntry?: () => DroppedEntry | null })
+            .webkitGetAsEntry as () => DroppedEntry | null)()
+        : null
+    )
+    .filter((entry): entry is DroppedEntry => entry !== null)
+
+  if (entries.length === 0) return Array.from(transfer.files ?? [])
+
+  const out: File[] = []
+  for (const entry of entries) await walk(entry, "", out)
+  return out
 }
 
 export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
+  const folderRef = useRef<HTMLInputElement>(null)
+
+  // Without this, dropping a file slightly off the dropzone makes the browser
+  // navigate to it, discarding the whole page and any review already done.
+  // Swallowing file drags document-wide keeps the dropzone as the only place a
+  // drop has meaning, without stopping the event reaching it.
+  useEffect(() => {
+    const swallowFileDrop = (event: DragEvent) => {
+      if (event.dataTransfer?.types?.includes("Files")) event.preventDefault()
+    }
+
+    document.addEventListener("dragover", swallowFileDrop)
+    document.addEventListener("drop", swallowFileDrop)
+    return () => {
+      document.removeEventListener("dragover", swallowFileDrop)
+      document.removeEventListener("drop", swallowFileDrop)
+    }
+  }, [])
 
   const [kind, setKind] = useState<ImportKind>("invoice")
   const [inPence, setInPence] = useState(false)
   const [taxRate, setTaxRate] = useState(20)
-  const [headers, setHeaders] = useState<string[]>([])
-  const [drafts, setDrafts] = useState<ImportDraft[]>([])
-  const [map, setMap] = useState<ColumnMap>({})
-  const [grid, setGrid] = useState<string[][]>([])
-  const [fileName, setFileName] = useState("")
+  const [sheets, setSheets] = useState<SheetState[]>([])
+  const [rejected, setRejected] = useState<RejectedFile[]>([])
   const [busy, setBusy] = useState(false)
+  const [dragging, setDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [outcome, setOutcome] = useState<CommitOutcome | null>(null)
+  const [progress, setProgress] = useState<string | null>(null)
 
-  const uploadFile = useCallback(
-    async (file: File, forKind: ImportKind, pence: boolean) => {
+  const groups = useMemo(() => {
+    const bySignature = new Map<string, SheetState[]>()
+    for (const sheet of sheets) {
+      const key = signature(sheet.headers)
+      const existing = bySignature.get(key)
+      if (existing) existing.push(sheet)
+      else bySignature.set(key, [sheet])
+    }
+    return Array.from(bySignature.values())
+  }, [sheets])
+
+  const allDrafts = useMemo(() => sheets.flatMap((sheet) => sheet.drafts), [sheets])
+  const ready = useMemo(() => allDrafts.filter((d) => !d.error).length, [allDrafts])
+  const blocked = useMemo(() => allDrafts.filter((d) => d.error).length, [allDrafts])
+  const duplicateRefs = useMemo(() => {
+    const seen = new Map<string, ImportDraft[]>()
+    for (const draft of allDrafts) {
+      const key = draft.originalNumber.trim().toLowerCase()
+      if (!key) continue
+      const list = seen.get(key)
+      if (list) list.push(draft)
+      else seen.set(key, [draft])
+    }
+    return Array.from(seen.entries()).filter(([, list]) => list.length > 1)
+  }, [allDrafts])
+
+  // Only a repeat that also agrees on date and total is treated as the same
+  // document twice; matching the commit-side rule so the preview never
+  // promises more than the import will actually create.
+  const exactRepeats = useMemo(
+    () =>
+      duplicateRefs.filter(([, list]) => {
+        const shapes = list.map((draft) => {
+          const subtotal = draft.items.reduce(
+            (sum, item) => sum + Math.round(item.unitPrice) * Math.max(1, Math.round(item.quantity)),
+            0
+          )
+          return `${draft.documentDate ?? ""}|${subtotal + Math.round((subtotal * taxRate) / 100)}`
+        })
+        return new Set(shapes).size < shapes.length
+      }),
+    [duplicateRefs, taxRate]
+  )
+
+  const totals = useMemo(
+    () =>
+      allDrafts.reduce(
+        (acc, draft) => {
+          if (draft.error) return acc
+          const lineTotal = draft.items.reduce(
+            (sum, item) => sum + Math.round(item.unitPrice * item.quantity),
+            0
+          )
+          acc.subtotal += lineTotal
+          acc.tax += Math.round((lineTotal * taxRate) / 100)
+          return acc
+        },
+        { subtotal: 0, tax: 0 }
+      ),
+    [allDrafts, taxRate]
+  )
+
+  const uploadFiles = useCallback(
+    async (incoming: File[], forKind: ImportKind, pence: boolean) => {
+      const usable = incoming.filter((file) => accepted(file.name))
+      const ignored: RejectedFile[] = incoming
+        .filter((file) => !accepted(file.name))
+        .map((file) => ({ fileName: file.name, reason: "Not an .xlsx or .csv file" }))
+
+      if (usable.length === 0) {
+        setError("None of those files are .xlsx or .csv files")
+        return
+      }
+
       setBusy(true)
       setError(null)
+      setProgress(`Reading ${usable.length} file${usable.length === 1 ? "" : "s"}…`)
+
       try {
         const form = new FormData()
-        form.append("file", file)
+        for (const file of usable) form.append("files", file)
         form.append("kind", forKind)
         form.append("inPence", String(pence))
 
         const res = await fetch("/api/import/parse", { method: "POST", body: form })
         const data = await res.json()
-        if (!res.ok) throw new Error(data.error ?? "Could not read that file")
+        if (!res.ok) throw new Error(data.error ?? "Could not read those files")
 
-        setHeaders(data.headers ?? [])
-        setDrafts(data.drafts ?? [])
-        setMap(data.autoDetected ?? {})
-        setGrid(data.grid ?? [])
-        setFileName(file.name)
+        const parsed = (data.sheets ?? []) as ParsedSheetResponse[]
+        setSheets(
+          parsed.map((sheet) => ({
+            ...sheet,
+            map: sheet.autoDetected ?? {},
+          }))
+        )
+        setRejected([...ignored, ...((data.rejected ?? []) as RejectedFile[])])
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not read that file")
+        setError(e instanceof Error ? e.message : "Could not read those files")
       } finally {
         setBusy(false)
+        setProgress(null)
       }
     },
     []
   )
 
-  async function reparse(nextMap: ColumnMap) {
-    if (grid.length === 0) return
-    setBusy(true)
-    setError(null)
-    try {
-      const res = await fetch("/api/import/parse", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ kind, map: nextMap, inPence, grid }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? "Could not re-read the file")
+  async function handleDrop(event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    setDragging(false)
+    if (busy) return
 
-      setHeaders(data.headers ?? headers)
-      setDrafts(data.drafts ?? [])
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not re-read the file")
-    } finally {
-      setBusy(false)
+    let picked: File[]
+    try {
+      picked = await filesFromDrop(event.dataTransfer)
+    } catch {
+      setError("Could not read that selection. Try picking the folder instead.")
+      return
     }
+
+    if (picked.length === 0) {
+      setError("No files found in that drop")
+      return
+    }
+    if (picked.length > MAX_FILES) {
+      setError(`That folder holds more than ${MAX_FILES} files. Select a subset.`)
+      return
+    }
+
+    await uploadFiles(picked, kind, inPence)
   }
 
-  const ready = useMemo(() => drafts.filter((d) => !d.error).length, [drafts])
-  const blocked = useMemo(() => drafts.filter((d) => d.error).length, [drafts])
+  async function reparseGroup(group: SheetState[], nextMap: ColumnMap) {
+    setBusy(true)
+    setError(null)
 
-  const totals = useMemo(() => {
-    return drafts.reduce(
-      (acc, draft) => {
-        if (draft.error) return acc
-        const lineTotal = draft.items.reduce(
-          (sum, item) => sum + Math.round(item.unitPrice * item.quantity),
-          0
+    for (const sheet of group) {
+      try {
+        const res = await fetch("/api/import/parse", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            kind,
+            map: nextMap,
+            inPence,
+            sourceFile: sheet.fileName,
+            grid: sheet.grid,
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error ?? "Could not re-read the file")
+
+        const drafts = (data.drafts ?? []) as ImportDraft[]
+        setSheets((prev) =>
+          prev.map((s) => (s.id === sheet.id ? { ...s, map: nextMap, drafts } : s))
         )
-        acc.subtotal += lineTotal
-        acc.tax += Math.round((lineTotal * taxRate) / 100)
-        return acc
-      },
-      { subtotal: 0, tax: 0 }
-    )
-  }, [drafts, taxRate])
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Could not re-read the file")
+        break
+      }
+    }
+
+    setBusy(false)
+  }
 
   async function commit() {
-    const usable = drafts.filter((d) => !d.error)
-    if (usable.length === 0) return
+    if (ready === 0) return
 
     setBusy(true)
     setError(null)
-    try {
-      const res = await fetch("/api/import/commit", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          kind,
-          taxRate,
-          rows: usable.map((d) => ({
-            rowNumber: d.rowNumber,
-            originalNumber: d.originalNumber,
-            customerName: d.customerName,
-            customerEmail: d.customerEmail,
-            customerCompany: d.customerCompany,
-            title: d.title,
-            documentDate: d.documentDate,
-            sentDate: d.sentDate,
-            dueDate: d.dueDate,
-            paidDate: d.paidDate,
-            acceptedDate: d.acceptedDate,
-            validUntil: d.validUntil,
-            status: d.status,
-            notes: d.notes,
-            currency: d.currency || orgCurrency,
-            items: d.items.map((item) => ({
-              description: item.description,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-            })),
-          })),
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? "Import failed")
 
-      setOutcome(data)
+    const rows = allDrafts
+      .filter((draft) => !draft.error)
+      .map((draft) => ({
+        rowNumber: draft.rowNumber,
+        sourceFile: draft.sourceFile,
+        originalNumber: draft.originalNumber,
+        customerName: draft.customerName,
+        customerEmail: draft.customerEmail,
+        customerCompany: draft.customerCompany,
+        title: draft.title,
+        documentDate: draft.documentDate,
+        sentDate: draft.sentDate,
+        dueDate: draft.dueDate,
+        paidDate: draft.paidDate,
+        acceptedDate: draft.acceptedDate,
+        validUntil: draft.validUntil,
+        status: draft.status,
+        notes: draft.notes,
+        currency: draft.currency || orgCurrency,
+        items: draft.items.map((item) => ({
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
+      }))
+
+    const chunks: typeof rows[] = []
+    for (let i = 0; i < rows.length; i += COMMIT_CHUNK) {
+      chunks.push(rows.slice(i, i + COMMIT_CHUNK))
+    }
+
+    const total: CommitOutcome = {
+      created: 0,
+      skipped: 0,
+      createdContacts: 0,
+      createdInvoices: 0,
+      createdQuotes: 0,
+      errors: [],
+    }
+
+    try {
+      for (const [index, chunk] of chunks.entries()) {
+        setProgress(
+          chunks.length > 1
+            ? `Importing batch ${index + 1} of ${chunks.length}…`
+            : `Importing ${rows.length} documents…`
+        )
+
+        const res = await fetch("/api/import/commit", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ kind, taxRate, rows: chunk }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error ?? "Import failed")
+
+        const part = data as CommitOutcome
+        total.created += part.created ?? 0
+        total.skipped += part.skipped ?? 0
+        total.createdContacts += part.createdContacts ?? 0
+        total.createdInvoices += part.createdInvoices ?? 0
+        total.createdQuotes += part.createdQuotes ?? 0
+        total.errors.push(...(part.errors ?? []))
+      }
+
+      setOutcome(total)
       router.refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : "Import failed")
     } finally {
       setBusy(false)
+      setProgress(null)
     }
   }
 
   function reset() {
-    setDrafts([])
-    setHeaders([])
-    setGrid([])
-    setFileName("")
+    setSheets([])
+    setRejected([])
     setOutcome(null)
     setError(null)
     if (fileRef.current) fileRef.current.value = ""
+    if (folderRef.current) folderRef.current.value = ""
   }
 
-  // ---- result -----------------------------------------------------------
   if (outcome) {
     return (
       <div className="space-y-6">
@@ -219,8 +476,8 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
               </p>
               {outcome.skipped > 0 && (
                 <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
-                  {outcome.skipped} row{outcome.skipped === 1 ? "" : "s"} could not
-                  be imported.
+                  {outcome.skipped} document{outcome.skipped === 1 ? "" : "s"} could
+                  not be imported.
                 </p>
               )}
               <div className="mt-4 flex flex-wrap gap-3">
@@ -235,7 +492,7 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
                   onClick={reset}
                   className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted"
                 >
-                  Import another file
+                  Import more files
                 </button>
               </div>
             </div>
@@ -245,16 +502,17 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
         {outcome.errors.length > 0 && (
           <div className="rounded-lg border border-border bg-card shadow-sm">
             <div className="border-b border-border p-4">
-              <h3 className="font-semibold">Rows that could not be imported</h3>
+              <h3 className="font-semibold">Documents that could not be imported</h3>
             </div>
             <ul className="divide-y divide-border text-sm">
-              {outcome.errors.slice(0, 50).map((err, i) => (
-                <li key={i} className="flex items-center justify-between gap-4 p-4">
+              {outcome.errors.slice(0, 100).map((err, i) => (
+                <li key={i} className="flex items-start justify-between gap-4 p-4">
                   <span className="font-medium">
                     {err.originalNumber || "No number"}
                     {err.rowNumber > 0 && (
                       <span className="ml-2 text-xs font-normal text-muted-foreground">
                         row {err.rowNumber}
+                        {err.sourceFile ? ` of ${err.sourceFile}` : ""}
                       </span>
                     )}
                   </span>
@@ -262,14 +520,18 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
                 </li>
               ))}
             </ul>
+            {outcome.errors.length > 100 && (
+              <p className="border-t border-border p-4 text-sm text-muted-foreground">
+                Showing the first 100 of {outcome.errors.length}.
+              </p>
+            )}
           </div>
         )}
       </div>
     )
   }
 
-  // ---- step 1: upload ---------------------------------------------------
-  if (drafts.length === 0) {
+  if (sheets.length === 0) {
     return (
       <div className="space-y-6">
         <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
@@ -300,32 +562,78 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
         <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
           <h2 className="font-semibold">2. Upload your spreadsheet</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            An .xlsx or .csv file, one row per line item, with your own invoice or
-            quote number repeated on each line. Nothing is created until you review
-            it on the next step.
+            One or many .xlsx or .csv files, one row per line item, with your own
+            invoice or quote number repeated on each line. Drag a whole folder in to
+            read several years at once. Nothing is created until you review it on the
+            next step.
           </p>
 
-          <div className="mt-4 rounded-lg border-2 border-dashed border-border p-8 text-center">
+          <div
+            onDragOver={(e) => {
+              e.preventDefault()
+              if (!busy) setDragging(true)
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            className={`mt-4 rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+              dragging ? "border-primary bg-primary/5" : "border-border"
+            }`}
+          >
             <FileSpreadsheet className="mx-auto h-8 w-8 text-muted-foreground" />
+            <p className="mt-3 text-sm font-medium">
+              Drop {`${ACCEPT.replace(/,/g, " or ")}`} files here, or a folder
+            </p>
+
             <input
               ref={fileRef}
               type="file"
-              accept=".xlsx,.xlsm,.csv"
+              accept={ACCEPT}
+              multiple
+              data-import-input="files"
               className="sr-only"
               onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) uploadFile(file, kind, inPence)
+                const files = Array.from(e.target.files ?? [])
+                if (files.length > 0) uploadFiles(files, kind, inPence)
               }}
             />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={busy}
-              className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-            >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              Choose file
-            </button>
+            <input
+              ref={folderRef}
+              type="file"
+              accept={ACCEPT}
+              multiple
+              data-import-input="folder"
+              className="sr-only"
+              {...{ webkitdirectory: "", directory: "" }}
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? [])
+                if (files.length > 0) uploadFiles(files, kind, inPence)
+              }}
+            />
+
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={busy}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                Choose files
+              </button>
+              <button
+                type="button"
+                onClick={() => folderRef.current?.click()}
+                disabled={busy}
+                className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+              >
+                <FolderOpen className="h-4 w-4" />
+                Choose a folder
+              </button>
+            </div>
+
+            {progress && (
+              <p className="mt-4 text-sm text-muted-foreground">{progress}</p>
+            )}
           </div>
 
           <div className="mt-4 space-y-2">
@@ -357,14 +665,16 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
     )
   }
 
-  // ---- step 2: review ---------------------------------------------------
+  const showFileColumn = sheets.length > 1
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">3. Review before importing</h2>
           <p className="text-sm text-muted-foreground">
-            {fileName} — {ready} {kind}
+            {sheets.length} file{sheets.length === 1 ? "" : "s"} — {ready}{" "}
+            {kind}
             {ready === 1 ? "" : "s"} ready
             {blocked > 0 && `, ${blocked} skipped`}. Numbers are generated fresh and
             assigned in date order.
@@ -381,67 +691,171 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
       </div>
 
       <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-        <h3 className="font-semibold">Column mapping</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          We matched these automatically. Change anything that looks wrong and the
-          preview updates.
-        </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {FIELD_OPTIONS.map((option) => (
-            <div key={option.key}>
-              <label className="text-sm font-medium" htmlFor={`map-${option.key}`}>
-                {option.label}
-              </label>
-              <select
-                id={`map-${option.key}`}
-                value={map[option.key] ?? -1}
-                onChange={(e) => {
-                  const value = e.target.value
-                  const next: ColumnMap = { ...map }
-                  if (value === "-1") delete next[option.key]
-                  else next[option.key] = Number(value)
-                  setMap(next)
-                  reparse(next)
-                }}
-                className="mt-1 w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm"
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <h3 className="font-semibold">Files</h3>
+          <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Files className="h-4 w-4" />
+            {sheets.length} loaded
+          </span>
+        </div>
+        <ul className="mt-3 divide-y divide-border text-sm">
+          {sheets.map((sheet) => {
+            const sheetReady = sheet.drafts.filter((d) => !d.error).length
+            return (
+              <li
+                key={sheet.id}
+                className="flex flex-wrap items-center justify-between gap-2 py-2"
               >
-                <option value={-1}>Not in this file</option>
-                {headers.map((header, index) => (
-                  <option key={index} value={index}>
-                    {header || `Column ${index + 1}`}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-0.5 text-xs text-muted-foreground">{option.hint}</p>
-            </div>
-          ))}
-        </div>
+                <span className="flex min-w-0 items-center gap-2">
+                  <FileSpreadsheet className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{sheet.fileName}</span>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {sheetReady} ready
+                  {sheet.drafts.length - sheetReady > 0 &&
+                    `, ${sheet.drafts.length - sheetReady} skipped`}
+                  {sheet.truncated && (
+                    <span className="ml-2 text-amber-700 dark:text-amber-400">
+                      truncated at 10,000 rows
+                    </span>
+                  )}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
 
-        <div className="mt-4 max-w-xs">
-          <label className="text-sm font-medium" htmlFor="tax-rate">
-            VAT rate for the whole import
-          </label>
-          <input
-            id="tax-rate"
-            type="number"
-            min={0}
-            max={100}
-            step="0.01"
-            value={taxRate}
-            onChange={(e) => setTaxRate(Number(e.target.value))}
-            className="mt-1 w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm"
-          />
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Applied to every line. Check this matches your historical VAT.
-          </p>
-        </div>
+        {rejected.length > 0 && (
+          <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-900 dark:bg-amber-950/40">
+            <p className="font-medium">
+              {rejected.length} file{rejected.length === 1 ? "" : "s"} could not be read
+            </p>
+            <ul className="mt-1 space-y-0.5 text-muted-foreground">
+              {rejected.map((item) => (
+                <li key={item.fileName} className="truncate">
+                  {item.fileName} — {item.reason}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
+      {groups.map((group, groupIndex) => {
+        const map = group[0].map
+        return (
+          <div
+            key={groupIndex}
+            className="rounded-lg border border-border bg-card p-6 shadow-sm"
+          >
+            <h3 className="font-semibold">Column mapping</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              We matched these automatically. Change anything that looks wrong and the
+              preview updates.
+            </p>
+            {group.length > 1 && (
+              <p className="mt-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+                {group.length} files share this column layout and are mapped together:{" "}
+                {group.map((sheet) => sheet.fileName).join(", ")}
+              </p>
+            )}
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {FIELD_OPTIONS.map((option) => (
+                <div key={option.key}>
+                  <label
+                    className="text-sm font-medium"
+                    htmlFor={`map-${groupIndex}-${option.key}`}
+                  >
+                    {option.label}
+                  </label>
+                  <select
+                    id={`map-${groupIndex}-${option.key}`}
+                    value={map[option.key] ?? -1}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      const next: ColumnMap = { ...map }
+                      if (value === "-1") delete next[option.key]
+                      else next[option.key] = Number(value)
+                      reparseGroup(group, next)
+                    }}
+                    disabled={busy}
+                    className="mt-1 w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm disabled:opacity-50"
+                  >
+                    <option value={-1}>Not in this file</option>
+                    {group[0].headers.map((header, index) => (
+                      <option key={index} value={index}>
+                        {header || `Column ${index + 1}`}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{option.hint}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 max-w-xs">
+              <label className="text-sm font-medium" htmlFor="tax-rate">
+                VAT rate for the whole import
+              </label>
+              <input
+                id="tax-rate"
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                value={taxRate}
+                onChange={(e) => setTaxRate(Number(e.target.value))}
+                className="mt-1 w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm"
+              />
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Applied to every line. Check this matches your historical VAT.
+              </p>
+            </div>
+          </div>
+        )
+      })}
+
+      {duplicateRefs.length > 0 && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm dark:border-amber-900 dark:bg-amber-950/40">
+          <p className="font-medium">
+            {duplicateRefs.length} original number
+            {duplicateRefs.length === 1 ? " is" : "s are"} used by more than one
+            document
+          </p>
+          <p className="mt-1 text-muted-foreground">
+            {exactRepeats.length > 0 ? (
+              <>
+                {exactRepeats.length} of them repeat with the same date and total, which
+                usually means a file was added twice — those will be skipped. Any that
+                differ are treated as genuinely different documents and will be
+                imported separately.
+              </>
+            ) : (
+              <>
+                All of them differ in date or amount, so they look like real separate
+                documents and will be imported separately.
+              </>
+            )}{" "}
+            Numbers already in MicroCRM are always skipped.
+          </p>
+          <p className="mt-2 truncate text-xs text-muted-foreground">
+            {duplicateRefs.slice(0, 20).map(([ref]) => ref).join(", ")}
+            {duplicateRefs.length > 20 && ` +${duplicateRefs.length - 20} more`}
+          </p>
+        </div>
+      )}
+
       <div className="rounded-lg border border-border bg-card shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="max-h-[32rem] overflow-auto">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/50">
+            <thead className="sticky top-0 bg-muted/95 backdrop-blur">
+              <tr className="border-b border-border">
+                {showFileColumn && (
+                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+                    File
+                  </th>
+                )}
                 <th className="px-3 py-2 text-left font-medium text-muted-foreground">
                   Original no.
                 </th>
@@ -477,7 +891,7 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
               </tr>
             </thead>
             <tbody>
-              {drafts.map((draft) => {
+              {allDrafts.map((draft) => {
                 const lineTotal = draft.items.reduce(
                   (sum, item) => sum + Math.round(item.unitPrice * item.quantity),
                   0
@@ -485,11 +899,16 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
                 const withTax = lineTotal + Math.round((lineTotal * taxRate) / 100)
                 return (
                   <tr
-                    key={draft.rowNumber}
+                    key={`${draft.sourceFile}-${draft.rowNumber}`}
                     className={`border-b border-border last:border-0 ${
                       draft.error ? "bg-red-50/60 dark:bg-red-950/30" : ""
                     }`}
                   >
+                    {showFileColumn && (
+                      <td className="max-w-[12rem] truncate px-3 py-2 text-xs text-muted-foreground">
+                        {draft.sourceFile}
+                      </td>
+                    )}
                     <td className="px-3 py-2 font-medium">
                       {draft.originalNumber || "—"}
                     </td>
@@ -504,9 +923,7 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
                     <td className="px-3 py-2">{draft.documentDate ?? "—"}</td>
                     <td className="px-3 py-2">{draft.sentDate ?? "—"}</td>
                     <td className="px-3 py-2">
-                      {kind === "invoice"
-                        ? draft.dueDate ?? "—"
-                        : draft.acceptedDate ?? "—"}
+                      {kind === "invoice" ? draft.dueDate ?? "—" : draft.acceptedDate ?? "—"}
                     </td>
                     {kind === "invoice" && (
                       <td className="px-3 py-2">{draft.paidDate ?? "—"}</td>
@@ -559,7 +976,7 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
                 currency: orgCurrency,
               }).format((totals.subtotal + totals.tax) / 100)}
             </span>{" "}
-            ({(totals.subtotal + totals.tax / 100).toFixed(2)} including VAT)
+            ({((totals.subtotal + totals.tax) / 100).toFixed(2)} including VAT)
           </p>
           {blocked > 0 && (
             <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
@@ -567,6 +984,7 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
               have no date or no line items.
             </p>
           )}
+          {progress && <p className="mt-1 text-xs text-muted-foreground">{progress}</p>}
         </div>
         <button
           type="button"

@@ -165,6 +165,18 @@ export function autoDetectColumns(headers: string[]): ColumnMap {
   return map
 }
 
+/**
+ * Identity for a header layout.
+ *
+ * Files exported from the same system usually share a column layout, so sheets
+ * are grouped by this key and share a single column mapping. Files with a
+ * different layout get their own mapping rather than being forced through
+ * another's column indexes.
+ */
+export function headerSignature(headers: string[]): string {
+  return headers.map((h) => h.trim().toLowerCase()).join("")
+}
+
 export function missingRequiredFields(map: ColumnMap): ImportField[] {
   return REQUIRED_FIELDS.filter((field) => map[field] === undefined)
 }
@@ -472,6 +484,8 @@ export interface ImportLineItem {
 export interface ImportDraft {
   /** Position in the original sheet, used to keep review rows stable. */
   rowNumber: number
+  /** File the row came from, so errors can name it once imports span files. */
+  sourceFile?: string
   originalNumber: string
   customerName: string
   customerEmail: string
@@ -499,6 +513,8 @@ export interface ParseOptions {
   /** Whether money columns are already in pence. */
   inPence: boolean
   defaultCurrency?: string
+  /** Originating file name, carried onto each draft for multi-file imports. */
+  sourceFile?: string
 }
 
 const cellAt = (row: string[], index: number | undefined): string =>
@@ -510,6 +526,11 @@ const cellAt = (row: string[], index: number | undefined): string =>
  * Rows sharing an original document number are collapsed into one document
  * with several line items. Rows without a document number each become their own
  * single-item document.
+ *
+ * Grouping is deliberately scoped to the grid passed in, never across grids.
+ * When a directory of spreadsheets is imported, each file is drafted on its own
+ * so a repeated number like `INV-001` in two different years stays two
+ * documents instead of silently merging their line items into one.
  */
 export function buildDrafts(
   grid: string[][],
@@ -608,6 +629,7 @@ export function buildDrafts(
 
     const draft: ImportDraft = {
       rowNumber,
+      sourceFile: options.sourceFile,
       originalNumber,
       customerName: cellAt(row, map.customerName),
       customerEmail: cellAt(row, map.customerEmail),

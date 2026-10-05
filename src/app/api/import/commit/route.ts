@@ -12,6 +12,7 @@ const dateField = z
 
 const rowSchema = z.object({
   rowNumber: z.number().int().nonnegative().optional(),
+  sourceFile: z.string().max(255).optional(),
   originalNumber: z.string().max(120).default(""),
   customerName: z.string().max(200).default(""),
   customerEmail: z.string().max(200).default(""),

@@ -17,14 +17,42 @@ import {
 // the serverless function.
 const MAX_BYTES = 10 * 1024 * 1024
 
+// A directory drop can pick up hundreds of files, so bound the batch as well as
+// each individual file.
+const MAX_FILES = 200
+const MAX_TOTAL_BYTES = 60 * 1024 * 1024
+
+// Rows kept per file. Drafts are built from exactly this many rows so the
+// returned grid and the preview can never disagree: re-parsing a corrected
+// column map then still sees every row the user was shown.
+const MAX_ROWS = 10000
+
+// The client re-posts the stored grid to change the column mapping, so this
+// ceiling has to comfortably exceed MAX_ROWS for the worst single file.
+const MAX_GRID_ROWS = MAX_ROWS + 100
+
 const ALLOWED_EXTENSIONS = [".xlsx", ".xlsm", ".csv"]
 
 const reparseSchema = z.object({
   kind: z.enum(["invoice", "quote"]),
   map: z.record(z.string(), z.number().int().nonnegative()),
   inPence: z.boolean(),
-  grid: z.array(z.array(z.string())).max(5000),
+  sourceFile: z.string().max(255).optional(),
+  grid: z.array(z.array(z.string())).max(MAX_GRID_ROWS),
 })
+
+/** One spreadsheet's worth of parsed state, returned per uploaded file. */
+interface ParsedSheet {
+  /** Stable within a response so the client can key rows without collisions. */
+  id: number
+  fileName: string
+  headers: string[]
+  drafts: ReturnType<typeof buildDrafts>["drafts"]
+  autoDetected: ColumnMap
+  grid: string[][]
+  /** True when the file had more rows than MAX_ROWS and the tail was dropped. */
+  truncated: boolean
+}
 
 export async function POST(request: Request) {
   const auth = await requireApiUser(request)
@@ -48,63 +76,113 @@ export async function POST(request: Request) {
 
     const { kind, grid, inPence } = parsed.data
     const map = sanitizeMap(parsed.data.map)
-    const { drafts, headers } = buildDrafts(grid, { kind, map, inPence })
-
-    return NextResponse.json({
-      headers,
-      drafts,
-      autoDetected: autoDetectColumns(headers),
+    const { drafts, headers } = buildDrafts(grid, {
+      kind,
+      map,
+      inPence,
+      sourceFile: parsed.data.sourceFile,
     })
+
+    return NextResponse.json({ headers, drafts, autoDetected: autoDetectColumns(headers) })
   }
 
-  // First call: parse the uploaded file.
+  // First call: parse the uploaded files. A directory drop posts every file
+  // under the same field name, with the single-file picker posting one.
   const form = await request.formData()
-  const file = form.get("file")
   const kind = (form.get("kind") as ImportKind | null) ?? "invoice"
+  const inPence = form.get("inPence") === "true"
 
   if (kind !== "invoice" && kind !== "quote") {
     return jsonError("Invalid document type", 400)
   }
-  if (!(file instanceof File)) {
+
+  const files = form
+    .getAll("files")
+    .filter((entry): entry is File => entry instanceof File)
+  const single = form.get("file")
+  const uploads = files.length > 0 ? files : single instanceof File ? [single] : []
+
+  if (uploads.length === 0) {
     return jsonError("No file uploaded", 400)
   }
-  if (file.size > MAX_BYTES) {
-    return jsonError("That file is larger than 10MB", 400)
+  if (uploads.length > MAX_FILES) {
+    return jsonError(`Please upload ${MAX_FILES} files or fewer at a time`, 400)
   }
 
-  const name = file.name.toLowerCase()
-  if (!ALLOWED_EXTENSIONS.some((ext) => name.endsWith(ext))) {
-    return jsonError("Upload an .xlsx or .csv file", 400)
+  let totalBytes = 0
+  for (const file of uploads) {
+    if (file.size > MAX_BYTES) {
+      return jsonError(`${file.name} is larger than 10MB`, 400)
+    }
+    const name = file.name.toLowerCase()
+    if (!ALLOWED_EXTENSIONS.some((ext) => name.endsWith(ext))) {
+      return jsonError(`${file.name} is not an .xlsx or .csv file`, 400)
+    }
+    totalBytes += file.size
+  }
+  if (totalBytes > MAX_TOTAL_BYTES) {
+    return jsonError("That selection of files is too large. Try fewer at a time.", 400)
   }
 
-  let grid: string[][]
-  try {
-    const buffer = await file.arrayBuffer()
-    grid = name.endsWith(".csv")
-      ? parseCsv(new TextDecoder().decode(buffer))
-      : await parseXlsx(buffer)
-  } catch (e) {
-    return jsonError(
-      e instanceof Error ? `Could not read that file: ${e.message}` : "Could not read that file",
-      400
-    )
+  const sheets: ParsedSheet[] = []
+  const rejected: { fileName: string; reason: string }[] = []
+
+  for (const [id, file] of uploads.entries()) {
+    const name = file.name.toLowerCase()
+
+    let grid: string[][]
+    try {
+      const buffer = await file.arrayBuffer()
+      grid = name.endsWith(".csv")
+        ? parseCsv(new TextDecoder().decode(buffer))
+        : await parseXlsx(buffer)
+    } catch (e) {
+      // One unreadable file must not abandon the rest of the directory, so it
+      // is collected and reported alongside the files that did parse.
+      rejected.push({
+        fileName: file.name,
+        reason: e instanceof Error ? e.message : "Could not read that file",
+      })
+      continue
+    }
+
+    if (grid.length < 2) {
+      rejected.push({
+        fileName: file.name,
+        reason: "No data rows below the header",
+      })
+      continue
+    }
+
+    const truncated = grid.length > MAX_ROWS
+    const usedGrid = truncated ? grid.slice(0, MAX_ROWS) : grid
+    const headers = (usedGrid[0] ?? []).map((h) => h.trim())
+    const autoDetected = autoDetectColumns(headers)
+
+    sheets.push({
+      id,
+      fileName: file.name,
+      headers,
+      // Drafted per file: see buildDrafts for why numbers are not merged across
+      // files.
+      drafts: buildDrafts(usedGrid, {
+        kind,
+        map: autoDetected,
+        inPence,
+        sourceFile: file.name,
+      }).drafts,
+      autoDetected,
+      grid: usedGrid,
+      truncated,
+    })
   }
 
-  if (grid.length < 2) {
-    return jsonError("That file has a header row but no data rows", 400)
+  if (sheets.length === 0) {
+    const detail = rejected[0]?.reason ?? "That file has a header row but no data rows"
+    return jsonError(`Nothing could be imported: ${detail}`, 400)
   }
 
-  const headers = (grid[0] ?? []).map((h) => h.trim())
-  const autoDetected = autoDetectColumns(headers)
-  const inPence = form.get("inPence") === "true"
-  const { drafts } = buildDrafts(grid, { kind, map: autoDetected, inPence })
-
-  return NextResponse.json({
-    headers,
-    drafts,
-    autoDetected,
-    grid: grid.slice(0, 2000),
-  })
+  return NextResponse.json({ sheets, rejected })
 }
 
 /** Drop unknown field names and out-of-range column indexes. */
