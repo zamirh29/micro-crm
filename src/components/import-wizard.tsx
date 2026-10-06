@@ -225,6 +225,7 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
   const [kind, setKind] = useState<ImportKind>("invoice")
   const [inPence, setInPence] = useState(false)
   const [taxRate, setTaxRate] = useState(20)
+  const [markPaid, setMarkPaid] = useState(false)
   const [sheets, setSheets] = useState<SheetState[]>([])
   const [rejected, setRejected] = useState<RejectedFile[]>([])
   const [busy, setBusy] = useState(false)
@@ -451,7 +452,7 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
         documentDate: draft.documentDate,
         sentDate: draft.sentDate,
         dueDate: draft.dueDate,
-        paidDate: draft.paidDate,
+        paidDate: markPaid ? draft.documentDate ?? null : draft.paidDate,
         acceptedDate: draft.acceptedDate,
         validUntil: draft.validUntil,
         status: draft.status,
@@ -877,6 +878,27 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
                 Applied to every line. Check this matches your historical VAT.
               </p>
             </div>
+
+            <label
+              htmlFor="mark-paid"
+              className="mt-4 flex max-w-md cursor-pointer items-start gap-2 text-sm"
+            >
+              <input
+                id="mark-paid"
+                type="checkbox"
+                checked={markPaid}
+                onChange={(e) => setMarkPaid(e.target.checked)}
+                disabled={busy}
+                className="mt-0.5 h-4 w-4 shrink-0"
+              />
+              <span>
+                <span className="font-medium">Mark every document as paid</span>
+                <span className="block text-xs text-muted-foreground">
+                  Sets the payment date to each document&apos;s own date. Use this for
+                  historical invoices that were already settled.
+                </span>
+              </span>
+            </label>
           </div>
         )
       })}

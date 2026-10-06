@@ -8,6 +8,8 @@ import {
   parseXlsx,
   autoDetectColumns,
   buildDrafts,
+  formToTable,
+  isFormTable,
   IMPORT_FIELDS,
   type ColumnMap,
   type ImportKind,
@@ -102,7 +104,8 @@ export async function POST(request: Request) {
     const { drafts, headers } = buildDrafts(grid, {
       kind,
       map,
-      inPence,
+      // A converted form is already major units, whatever the toggle says.
+      inPence: isFormTable(grid) ? false : inPence,
       sourceFile: parsed.data.sourceFile,
     })
 
@@ -162,9 +165,12 @@ export async function POST(request: Request) {
     let grid: string[][]
     try {
       const buffer = await file.arrayBuffer()
-      grid = name.endsWith(".csv")
+      const raw = name.endsWith(".csv")
         ? parseCsv(new TextDecoder().decode(buffer))
         : await parseXlsx(buffer)
+      // A printed form has no columns to detect, so it is rewritten into a
+      // table first and then handled exactly like every other upload.
+      grid = formToTable(raw) ?? raw
     } catch (e) {
       // One unreadable file must not abandon the rest of the directory, so it
       // is collected and reported alongside the files that did parse.
@@ -197,7 +203,8 @@ export async function POST(request: Request) {
       drafts: buildDrafts(usedGrid, {
         kind,
         map: autoDetected,
-        inPence,
+        // A converted form is already major units, whatever the toggle says.
+        inPence: isFormTable(usedGrid) ? false : inPence,
         sourceFile: file.name,
       }).drafts,
       autoDetected,

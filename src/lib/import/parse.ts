@@ -410,6 +410,340 @@ export function parseNumberCell(raw: string): number | null {
 }
 
 // ---------------------------------------------------------------------------
+// Printed forms
+// ---------------------------------------------------------------------------
+
+/**
+ * Header row produced by `formToTable`.
+ *
+ * A printed invoice has no tabular shape at all: labels float above their
+ * values and the line items sit in a free-text block. Rather than teach the
+ * rest of the pipeline a second representation, a recognised form is rewritten
+ * into this ordinary layout and then flows through column detection, drafting,
+ * re-mapping and committing exactly like a CSV export would.
+ */
+export const FORM_HEADERS = [
+  "Invoice Number",
+  "Invoice Date",
+  "Client Name",
+  "Client Email",
+  "Title",
+  "Description",
+  "Qty",
+  "Unit Price",
+  "Status",
+  "Notes",
+] as const
+
+/**
+ * True for a grid `formToTable` produced.
+ *
+ * The review screen posts its grid back to re-map the columns, by which point
+ * the original form is gone. The header row is the only way to know the money
+ * cells were read as major units, so a re-parse cannot rescale them.
+ */
+export function isFormTable(grid: string[][]): boolean {
+  const head = grid[0]
+  if (!head || head.length !== FORM_HEADERS.length) return false
+  return FORM_HEADERS.every((header, index) => (head[index] ?? "").trim() === header)
+}
+
+const FORM_NUMBER_LABEL = /^(invoice|quote)\s*#:\s*$/i
+const FORM_DATE_LABEL = /^date:\s*$/i
+const FORM_SUBTOTAL_LABEL = /^sub\s?total$/i
+const FORM_LINE_HEADER = /^description$/i
+const FORM_TOTAL_COLUMN = /^total$/i
+
+/**
+ * Labels a value scan must not read past.
+ *
+ * On these forms a value sits to the right of its label in a merged run of
+ * cells, so the scan skips repeated copies of the label it started on and
+ * stops at any *other* label. Without this an empty Email cell would pick up
+ * the Registration value sitting beside it.
+ */
+const FORM_BLOCK_LABELS: RegExp[] = [
+  /^name$/i,
+  /^address$/i,
+  /^city,?\s*postcode$/i,
+  /^phone$/i,
+  /^email$/i,
+  /^client #:\s*$/i,
+  /^bill to$/i,
+  /^vehicle info\.?$/i,
+  /^make$/i,
+  /^model$/i,
+  /^colou?r$/i,
+  /^year$/i,
+  /^mileage$/i,
+  /^registration$/i,
+  FORM_LINE_HEADER,
+  /^notes:\s*$/i,
+  FORM_SUBTOTAL_LABEL,
+  /^vat$/i,
+  /^delivery$/i,
+  /^total due$/i,
+  FORM_TOTAL_COLUMN,
+  /^paid$/i,
+]
+
+/**
+ * Collapse whitespace runs, including the non-breaking spaces Excel hides
+ * inside names, so the same customer matches no matter which cell it came from.
+ */
+function squashText(value: string): string {
+  return value.replace(/[\s\u00a0]+/g, " ").trim()
+}
+
+/** A section heading on the form, e.g. `Work carried out:`. */
+function isFormHeading(text: string): boolean {
+  return /:\s*$/.test(text)
+}
+
+function findFormCell(
+  grid: string[][],
+  pattern: RegExp,
+  fromRow: number,
+  toRow: number = grid.length
+): { row: number; col: number } | null {
+  const last = Math.min(toRow, grid.length)
+  for (let row = fromRow; row < last; row++) {
+    const cells = grid[row]
+    for (let col = 0; col < cells.length; col++) {
+      if (pattern.test(cells[col].trim())) return { row, col }
+    }
+  }
+  return null
+}
+
+function formValueAfter(row: string[], index: number, same: RegExp): string {
+  for (let col = index + 1; col < row.length; col++) {
+    const cell = row[col].trim()
+    if (!cell || same.test(cell)) continue
+    if (FORM_BLOCK_LABELS.some((label) => label.test(cell))) return ""
+    return cell
+  }
+  return ""
+}
+
+function moneyLabel(amount: number): string {
+  return (amount / 100).toFixed(2)
+}
+
+/**
+ * Rewrite a printed invoice form into a tabular grid, or return null when the
+ * sheet is not one.
+ *
+ * A sheet that *looks* like a form but cannot be read safely throws instead. A
+ * form that silently drops line items or mis-reads a total is far worse than
+ * one the upload reports as unreadable alongside the files that did parse.
+ */
+export function formToTable(grid: string[][]): string[][] | null {
+  if (grid.length < 4) return null
+
+  // The banner row is the fastest tell, but on its own it is far too common:
+  // an ordinary sheet can quite reasonably have an "Invoice" column header.
+  // The number and subtotal labels are what make this a printed form.
+  const banner = (grid[0] ?? []).map((cell) => cell.trim().toLowerCase())
+  if (!banner.includes("invoice") && !banner.includes("quote")) return null
+  if (!findFormCell(grid, FORM_NUMBER_LABEL, 1)) return null
+  if (!findFormCell(grid, FORM_SUBTOTAL_LABEL, 1)) return null
+
+  const lineHeader = findFormCell(grid, FORM_LINE_HEADER, 1)
+  if (!lineHeader) {
+    throw new Error("That printed form has no line-item block (no Description row)")
+  }
+  const headerRow = lineHeader.row
+
+  const subtotalCell = findFormCell(grid, FORM_SUBTOTAL_LABEL, headerRow)
+  if (!subtotalCell) {
+    throw new Error("That printed form has no SUBTOTAL row below its line items")
+  }
+
+  const read = (pattern: RegExp, from: number, to: number, what: string): string => {
+    const hit = findFormCell(grid, pattern, from, to)
+    if (!hit) throw new Error(`That printed form has no ${what} label`)
+    return formValueAfter(grid[hit.row], hit.col, pattern)
+  }
+  const peek = (pattern: RegExp, from: number, to: number): string => {
+    const hit = findFormCell(grid, pattern, from, to)
+    return hit ? formValueAfter(grid[hit.row], hit.col, pattern) : ""
+  }
+
+  // --- document header ---------------------------------------------------
+
+  const originalNumber = squashText(read(FORM_NUMBER_LABEL, 1, headerRow, "invoice number"))
+  if (!originalNumber) throw new Error("That printed form has no invoice number")
+
+  const documentDate = parseDateCell(read(FORM_DATE_LABEL, 1, headerRow, "date"))
+  if (!documentDate) throw new Error("That printed form has no readable invoice date")
+
+  const customerName = squashText(peek(/^name$/i, 1, headerRow))
+  const customerEmail = squashText(peek(/^email$/i, 1, headerRow))
+  const address = squashText(peek(/^address$/i, 1, headerRow))
+  const city = squashText(peek(/^city,?\s*postcode$/i, 1, headerRow))
+  const phone = squashText(peek(/^phone$/i, 1, headerRow))
+  const make = squashText(peek(/^make$/i, 1, headerRow))
+  const model = squashText(peek(/^model$/i, 1, headerRow))
+  const colour = squashText(peek(/^colou?r$/i, 1, headerRow))
+  const year = squashText(peek(/^year$/i, 1, headerRow))
+  const registration = squashText(peek(/^registration$/i, 1, headerRow))
+  const mileage = squashText(peek(/^mileage$/i, 1, headerRow))
+
+  // --- totals ------------------------------------------------------------
+
+  const totalsFrom = subtotalCell.row
+  const subtotal = parseMoneyCell(read(FORM_SUBTOTAL_LABEL, totalsFrom, grid.length, "SUBTOTAL"), false)
+  if (subtotal === null) {
+    throw new Error("That printed form has no readable SUBTOTAL")
+  }
+
+  // Tax is applied once per import, not per invoice, so a form carrying its
+  // own VAT would import at the wrong figure with no way to say otherwise.
+  const vat = parseMoneyCell(peek(/^vat$/i, totalsFrom, grid.length), false)
+  if (vat) {
+    throw new Error("That printed form includes VAT, which the importer cannot apply per invoice")
+  }
+
+  const deliveryRaw = squashText(peek(/^delivery$/i, totalsFrom, grid.length))
+  const delivery = parseMoneyCell(deliveryRaw, false)
+  const total = parseMoneyCell(peek(FORM_TOTAL_COLUMN, totalsFrom, grid.length), false)
+  if (delivery && total !== null && subtotal + delivery !== total) {
+    throw new Error("That printed form's TOTAL does not equal its SUBTOTAL plus DELIVERY")
+  }
+
+  // --- line items --------------------------------------------------------
+
+  const descCol = lineHeader.col
+  const totalCol = findFormCell(grid, FORM_TOTAL_COLUMN, headerRow, headerRow + 1)?.col
+  if (totalCol === undefined) {
+    throw new Error("That printed form has no Total column beside its Description column")
+  }
+
+  const lines: { price: string | null; text: string }[] = []
+  for (let row = headerRow + 1; row < subtotalCell.row; row++) {
+    const text = squashText(grid[row]?.[descCol] ?? "")
+    const priceCell = squashText(grid[row]?.[totalCol] ?? "")
+    const price = parseMoneyCell(priceCell, false) === null ? null : priceCell
+    if (!text && price === null) continue
+    lines.push({ price, text })
+  }
+
+  const itemsSum = lines.reduce((sum, line) => {
+    if (line.price === null) return sum
+    return sum + (parseMoneyCell(line.price, false) ?? 0)
+  }, 0)
+  if (itemsSum !== subtotal) {
+    throw new Error(
+      `That printed form's line items add up to ${moneyLabel(itemsSum)} but its SUBTOTAL is ${moneyLabel(subtotal)}`
+    )
+  }
+
+  // A heading carrying its own price adopts the unpriced lines beneath it, so
+  // `Work carried out:` reads as the work rather than as a bare label.
+  const absorbed = new Set<number>()
+  lines.forEach((line, index) => {
+    if (line.price === null || !isFormHeading(line.text)) return
+    const details: string[] = []
+    for (let next = index + 1; next < lines.length; next++) {
+      const following = lines[next]
+      if (following.price !== null) break
+      details.push(following.text)
+      absorbed.add(next)
+    }
+    if (details.length > 0) line.text = details.join("; ")
+  })
+
+  // Everything still unpriced is narrative the form could not bill for, so it
+  // is preserved as notes rather than invented as zero-price line items.
+  const noteLines: string[] = []
+  let run: string[] = []
+  const flushRun = () => {
+    // A heading with nothing under it (`Repairs carried out to:`) is a layout
+    // artefact of the printed form rather than anything worth keeping.
+    run.forEach((line, index) => {
+      const following = run[index + 1]
+      if (isFormHeading(line) && (!following || isFormHeading(following))) return
+      noteLines.push(line)
+    })
+    run = []
+  }
+  lines.forEach((line, index) => {
+    if (absorbed.has(index)) return
+    if (line.price !== null) {
+      flushRun()
+      return
+    }
+    run.push(line.text)
+  })
+  flushRun()
+
+  // --- title and notes ---------------------------------------------------
+
+  // The registration is how a body shop identifies a job, and unlike the work
+  // description it is present and stable on every form.
+  const vehicle = squashText([registration, make, model].filter(Boolean).join(" "))
+  const fallbackTitle =
+    lines.find((line) => line.price !== null && !isFormHeading(line.text))?.text ||
+    lines.find((line) => line.price === null && !isFormHeading(line.text))?.text ||
+    ""
+  const title = vehicle || fallbackTitle
+
+  const infoLines: string[] = []
+  const addressLine = [address, city].filter(Boolean).join(", ")
+  if (addressLine) infoLines.push(`Address: ${squashText(addressLine)}`)
+  if (phone) infoLines.push(`Phone: ${phone}`)
+  const vehicleLine = [
+    colour,
+    year && `year ${year}`,
+    mileage && `mileage ${mileage}`,
+  ].filter(Boolean)
+  if (vehicleLine.length > 0) infoLines.push(`Vehicle: ${vehicleLine.join(", ")}`)
+  const notes = [...infoLines, ...noteLines].join("\n")
+
+  const grandTotal = total ?? subtotal
+  const paid = parseMoneyCell(peek(/^paid$/i, totalsFrom, grid.length), false)
+  const status = paid !== null && paid > 0 && paid >= grandTotal ? "paid" : ""
+
+  // --- synthetic grid ----------------------------------------------------
+
+  const items = lines.filter((line): line is { price: string; text: string } => line.price !== null)
+  if (delivery) items.push({ price: deliveryRaw, text: "Delivery" })
+  if (items.length === 0) {
+    items.push({ price: "", text: fallbackTitle || "Imported line" })
+  }
+
+  const rows: string[][] = [[...FORM_HEADERS]]
+  items.forEach((item) => {
+    rows.push([
+      originalNumber,
+      documentDate,
+      customerName,
+      customerEmail,
+      title,
+      item.text || "Imported line",
+      "1",
+      item.price,
+      status,
+      notes,
+    ])
+  })
+
+  // Identity belongs on the first row only; the number and date repeat on
+  // every row because a later line without a date is dropped as unimportable.
+  for (let index = 2; index < rows.length; index++) {
+    const row = rows[index]
+    row[2] = ""
+    row[3] = ""
+    row[4] = ""
+    row[8] = ""
+    row[9] = ""
+  }
+
+  return rows
+}
+
+// ---------------------------------------------------------------------------
 // Status
 // ---------------------------------------------------------------------------
 
