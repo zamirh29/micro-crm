@@ -127,11 +127,19 @@ export interface Subscription {
   id: string
   user_id: string
   org_id: string
-  stripe_customer_id: string
+  stripe_customer_id: string | null
   stripe_subscription_id: string | null
   status: "active" | "canceled" | "past_due" | "trialing"
   plan: "free" | "pro"
   current_period_end: string | null
+  billing_provider: string | null
+  revenuecat_app_user_id: string | null
+  store: string | null
+  store_product_id: string | null
+  store_subscription_id: string | null
+  store_transaction_id: string | null
+  entitlement_expires_at: string | null
+  management_url: string | null
   created_at: string
 }
 
@@ -158,6 +166,16 @@ export interface Notification {
   created_at: string
 }
 
+export interface RevenueCatWebhookEvent {
+  id: string
+  type: string
+  app_user_id: string | null
+  environment: string | null
+  received_at: string
+  processed_at: string | null
+  outcome: string | null
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -173,6 +191,7 @@ export interface Database {
       subscriptions: { Row: Subscription }
       notifications: { Row: Notification }
       expenses: { Row: Expense }
+      revenuecat_webhook_events: { Row: RevenueCatWebhookEvent }
     }
   }
 }
