@@ -41,6 +41,17 @@ function parsePence(value: string): number {
   return Math.round(parseFloat(value || "0") * 100)
 }
 
+const DUE_PRESET_DAYS: Record<string, number> = { "7": 7, "14": 14, "30": 30 }
+
+function addDaysToDate(base: Date, days: number): string {
+  const d = new Date(base)
+  d.setDate(d.getDate() + days)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${y}-${m}-${day}`
+}
+
 export default function InvoiceForm({
   defaultCurrency,
   invoice,
@@ -63,10 +74,24 @@ export default function InvoiceForm({
     description: invoice?.description ?? "",
     tax_rate: invoice ? String(invoice.tax_rate) : "0",
     notes: invoice?.notes ?? "",
-    due_date: invoice?.due_date ?? "",
+    due_date: invoice?.due_date ?? addDaysToDate(new Date(), 30),
     currency:
       invoice?.currency || defaultCurrency || DEFAULT_COMPANY.currency,
   })
+
+  const [duePreset, setDuePreset] = useState<string>(
+    invoice ? "custom" : "30"
+  )
+
+  function handlePresetChange(preset: string) {
+    setDuePreset(preset)
+    if (preset !== "custom") {
+      setForm((f) => ({
+        ...f,
+        due_date: addDaysToDate(new Date(), DUE_PRESET_DAYS[preset]),
+      }))
+    }
+  }
 
   const [invoiceDate, setInvoiceDate] = useState(invoice_date ?? "")
   const [sentDate, setSentDate] = useState(sent_date ?? "")
@@ -180,21 +205,53 @@ export default function InvoiceForm({
 
             <div>
               <label
-                htmlFor="due_date"
+                htmlFor={invoice ? "due_date" : "due_preset"}
                 className="block text-sm font-medium text-foreground"
               >
                 Due Date
               </label>
-              <input
-                id="due_date"
-                type="date"
-                required={!invoice}
-                value={form.due_date}
-                onChange={(e) =>
-                  setForm({ ...form, due_date: e.target.value })
-                }
-                className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              />
+              {invoice ? (
+                <input
+                  id="due_date"
+                  type="date"
+                  required={!invoice}
+                  value={form.due_date}
+                  onChange={(e) =>
+                    setForm({ ...form, due_date: e.target.value })
+                  }
+                  className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              ) : (
+                <>
+                  <select
+                    id="due_preset"
+                    value={duePreset}
+                    onChange={(e) => handlePresetChange(e.target.value)}
+                    className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="7">7 days from invoice date</option>
+                    <option value="14">14 days from invoice date</option>
+                    <option value="30">30 days from invoice date</option>
+                    <option value="custom">Pick a specific date...</option>
+                  </select>
+                  <input
+                    id="due_date"
+                    type="date"
+                    required
+                    value={form.due_date}
+                    disabled={duePreset !== "custom"}
+                    onChange={(e) => {
+                      setForm({ ...form, due_date: e.target.value })
+                      setDuePreset("custom")
+                    }}
+                    className="mt-2 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Due date is set from the invoice date (today). Pick 7, 14 or
+                    30 days, or choose a specific date.
+                  </p>
+                </>
+              )}
             </div>
 
             {showInvoiceDate && (
