@@ -74,7 +74,21 @@ export default function QuoteForm({
     (sum, item) => sum + item.quantity * item.unit_price,
     0
   )
-  const taxRate = quote?.tax_rate ?? 20
+  const [taxRate, setTaxRate] = useState(quote?.tax_rate ?? 20)
+  useEffect(() => {
+    if (quote) return
+    const interval = setInterval(() => {
+      try {
+        const w = window as Window & { __quoteTaxRate?: number | null }
+        const v = w.__quoteTaxRate
+        if (v !== undefined && v !== null) {
+          setTaxRate(Number(v))
+          delete w.__quoteTaxRate
+        }
+      } catch {}
+    }, 300)
+    return () => clearInterval(interval)
+  }, [quote])
   const taxAmount = Math.round(subtotal * (taxRate / 100))
   const total = subtotal + taxAmount
   const symbol = currencySymbol(currency)
@@ -174,7 +188,18 @@ export default function QuoteForm({
               <CustomerSelect
                 name="contact_id"
                 value={contactId}
-                onChange={setContactId}
+                onChange={(id) => {
+                  setContactId(id)
+                  try {
+                    const w = window as Window & { __customersCache?: Array<{ id: string; tax_rate?: number | null }>; __quoteTaxRate?: number | null }
+                    const selected = w.__customersCache?.find(
+                      (c) => c.id === id
+                    )
+                    if (selected && selected.tax_rate !== null && selected.tax_rate !== undefined) {
+                      w.__quoteTaxRate = selected.tax_rate
+                    }
+                  } catch {}
+                }}
                 required
               />
             </div>
@@ -382,8 +407,20 @@ export default function QuoteForm({
               <span className="text-muted-foreground">Subtotal</span>
               <span className="font-medium">{formatAmount(subtotal)}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Tax ({taxRate}%)</span>
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Tax</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={taxRate}
+                  onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+                  className="h-8 w-20 rounded-md border border-input bg-background px-2 py-1 text-xs text-right"
+                />
+                <span className="text-muted-foreground">%</span>
+              </div>
               <span className="font-medium">{formatAmount(taxAmount)}</span>
             </div>
             <div className="flex justify-between text-base font-semibold border-t border-border pt-2">

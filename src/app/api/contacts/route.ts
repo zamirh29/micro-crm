@@ -12,6 +12,18 @@ const createSchema = z.object({
   company: z.string().nullish(),
   status: z.enum(["lead", "prospect", "client", "inactive"]).nullish(),
   notes: z.string().nullish(),
+  tax_rate: z.coerce.number().min(0).max(100).nullish(),
+  vat_registered: z
+    .preprocess((v) => {
+      if (v === "on") return true
+      if (v === "true") return true
+      if (v === "1") return true
+      if (v === false) return false
+      if (v === "false") return false
+      if (v === "0") return false
+      return v
+    }, z.boolean())
+    .nullish(),
 })
 
 export async function GET(request: Request) {
@@ -41,7 +53,15 @@ export async function POST(request: Request) {
     const contact = await createContactRecord(auth.supabase, {
       orgId: auth.orgId,
       userId: auth.user.id,
-      input: { ...parsed.data, status: parsed.data.status ?? undefined },
+      input: {
+        ...parsed.data,
+        status: parsed.data.status ?? undefined,
+        tax_rate: parsed.data.tax_rate ?? undefined,
+        vat_registered:
+          parsed.data.vat_registered === null
+            ? undefined
+            : parsed.data.vat_registered,
+      },
     })
     return NextResponse.json({ contact }, { status: 201 })
   } catch (err) {

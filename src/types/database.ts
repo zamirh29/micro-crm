@@ -40,6 +40,8 @@ export interface Contact {
   company: string | null
   status: ContactStatus
   notes: string | null
+  tax_rate: number | null
+  vat_registered: boolean
   created_at: string
   updated_at: string
 }

@@ -43,31 +43,41 @@ export async function createContact(formData: FormData) {
       phone: (formData.get("phone") as string) || null,
       company: (formData.get("company") as string) || null,
       status: (formData.get("status") as ContactStatus) || "lead",
-      notes: (formData.get("notes") as string) || null,
-    },
-  })
-
-  revalidatePath("/dashboard/contacts")
-  redirect("/dashboard/contacts")
-}
-
-export async function updateContact(id: string, formData: FormData) {
-  const { supabase, user, orgId } = await getSession()
-
-  await updateContactRecord(supabase, {
-    orgId,
-    userId: user.id,
-    id,
-    input: {
-      first_name: (formData.get("first_name") as string) ?? "",
-      last_name: (formData.get("last_name") as string) || null,
-      email: (formData.get("email") as string) || null,
-      phone: (formData.get("phone") as string) || null,
-      company: (formData.get("company") as string) || null,
-      status: (formData.get("status") as ContactStatus) || "lead",
-      notes: (formData.get("notes") as string) || null,
-    },
-  })
+       notes: (formData.get("notes") as string) || null,
+       tax_rate:
+         formData.get("tax_rate") === null || formData.get("tax_rate") === ""
+           ? null
+           : Number(formData.get("tax_rate")),
+       vat_registered: formData.get("vat_registered") === "on",
+     },
+   })
+ 
+   revalidatePath("/dashboard/contacts")
+   redirect("/dashboard/contacts")
+ }
+ 
+ export async function updateContact(id: string, formData: FormData) {
+   const { supabase, user, orgId } = await getSession()
+ 
+   await updateContactRecord(supabase, {
+     orgId,
+     userId: user.id,
+     id,
+     input: {
+       first_name: (formData.get("first_name") as string) ?? "",
+       last_name: (formData.get("last_name") as string) || null,
+       email: (formData.get("email") as string) || null,
+       phone: (formData.get("phone") as string) || null,
+       company: (formData.get("company") as string) || null,
+       status: (formData.get("status") as ContactStatus) || "lead",
+       notes: (formData.get("notes") as string) || null,
+       tax_rate:
+         formData.get("tax_rate") === null || formData.get("tax_rate") === ""
+           ? null
+           : Number(formData.get("tax_rate")),
+       vat_registered: formData.get("vat_registered") === "on",
+     },
+   })
 
   revalidatePath("/dashboard/contacts")
   revalidatePath(`/dashboard/contacts/${id}`)

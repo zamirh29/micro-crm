@@ -22,6 +22,8 @@ export interface ContactFields {
   company?: string | null
   status?: ContactStatus
   notes?: string | null
+  tax_rate?: number | null
+  vat_registered?: boolean
 }
 
 function nameOf(row: { first_name: string; last_name?: string | null }) {
@@ -75,6 +77,8 @@ export async function createContactRecord(
   }
   if (input.status) row.status = input.status
   if (input.notes !== undefined) row.notes = (input.notes ?? "").trim() || null
+  if (input.tax_rate !== undefined) row.tax_rate = input.tax_rate
+  if (input.vat_registered !== undefined) row.vat_registered = input.vat_registered
 
   const { data: contact, error } = await supabase
     .from("contacts")
@@ -110,6 +114,8 @@ export async function updateContactRecord(
   if (input.company !== undefined) patch.company = (input.company ?? "").trim() || null
   if (input.status !== undefined) patch.status = input.status
   if (input.notes !== undefined) patch.notes = (input.notes ?? "").trim() || null
+  if (input.tax_rate !== undefined) patch.tax_rate = input.tax_rate
+  if (input.vat_registered !== undefined) patch.vat_registered = input.vat_registered
 
   if (Object.keys(patch).length === 0) {
     const { data: unchanged } = await supabase

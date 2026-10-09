@@ -82,6 +82,7 @@ export default function InvoiceForm({
   const [duePreset, setDuePreset] = useState<string>(
     invoice ? "custom" : "30"
   )
+  const prevContactRef = { current: form.contact_id }
 
   function handlePresetChange(preset: string) {
     setDuePreset(preset)
@@ -104,6 +105,10 @@ export default function InvoiceForm({
   )
 
   const symbol = currencySymbol(form.currency)
+
+  const handleCustomerChange = (id: string) => {
+    setForm((prev) => ({ ...prev, contact_id: id }))
+  }
 
   function addItem() {
     setItems([...items, { description: "", quantity: 1, unit_price: 0 }])
@@ -198,7 +203,23 @@ export default function InvoiceForm({
             <div>
               <CustomerSelect
                 value={form.contact_id}
-                onChange={(contact_id) => setForm({ ...form, contact_id })}
+                onChange={(contact_id) => {
+                  setForm((prev) => ({ ...prev, contact_id }))
+                  // Pre-fill VAT from customer if available
+                  try {
+                    const cache = (window as Window & { __customersCache?: Array<{ id: string; tax_rate?: number | null }> })
+                      .__customersCache
+                    const selected = cache?.find(
+                      (c) => c.id === contact_id
+                    )
+                    if (selected && selected.tax_rate !== null && selected.tax_rate !== undefined) {
+                      setForm((prev) => ({
+                        ...prev,
+                        tax_rate: String(selected.tax_rate),
+                      }))
+                    }
+                  } catch {}
+                }}
                 required
               />
             </div>

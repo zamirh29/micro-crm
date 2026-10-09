@@ -8,6 +8,8 @@ interface Customer {
   first_name: string
   last_name: string
   company: string | null
+  tax_rate?: number | null
+  vat_registered?: boolean
 }
 
 interface CustomerSelectProps {
@@ -52,7 +54,13 @@ export default function CustomerSelect({
   useEffect(() => {
     fetch("/api/contacts")
       .then((res) => res.json())
-      .then((data) => setCustomers(data.contacts ?? []))
+      .then((data) => {
+        const list = data.contacts ?? []
+        setCustomers(list)
+        try {
+          ;(window as Window & { __customersCache?: unknown[] }).__customersCache = list as unknown[]
+        } catch {}
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])

@@ -140,6 +140,22 @@ export default async function ContactDetailPage({
             </div>
             <div>
               <dt className="text-sm font-medium text-muted-foreground">
+                VAT Rate
+              </dt>
+              <dd className="text-sm">
+                {contact.tax_rate === null || contact.tax_rate === undefined
+                  ? "\u2014"
+                  : `${contact.tax_rate}%`}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-muted-foreground">
+                VAT Registered
+              </dt>
+              <dd className="text-sm">{contact.vat_registered ? "Yes" : "No"}</dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-muted-foreground">
                 Created
               </dt>
               <dd className="text-sm">{formatDate(contact.created_at)}</dd>

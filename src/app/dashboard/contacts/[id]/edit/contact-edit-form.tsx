@@ -15,6 +15,8 @@ interface ContactEditFormProps {
     company: string | null
     status: string
     notes: string | null
+    tax_rate: number | null
+    vat_registered: boolean
   }
 }
 
@@ -158,6 +160,41 @@ export default function ContactEditForm({
             <option value="client">Client</option>
             <option value="inactive">Inactive</option>
           </select>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label
+            htmlFor="tax_rate"
+            className="block text-sm font-medium text-foreground"
+          >
+            VAT Rate (%)
+          </label>
+          <input
+            id="tax_rate"
+            name="tax_rate"
+            type="number"
+            step="0.01"
+            min="0"
+            max="100"
+            defaultValue={contact.tax_rate ?? ""}
+            className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+            placeholder="0.00"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 pt-6">
+          <input
+            id="vat_registered"
+            name="vat_registered"
+            type="checkbox"
+            defaultChecked={contact.vat_registered}
+            className="h-4 w-4 rounded border-input"
+          />
+          <label htmlFor="vat_registered" className="text-sm font-medium text-foreground">
+            VAT Registered
+          </label>
         </div>
       </div>
 
