@@ -238,7 +238,7 @@ async function main() {
 
     const { data: created } = await sb
       .from("invoices")
-      .select("id, number, original_number, contact_id, title, status, paid_at, subtotal, tax_rate, tax_amount, total, notes, invoice_items(*)")
+      .select("id, number, original_number, contact_id, title, status, paid_at, due_date, subtotal, tax_rate, tax_amount, total, notes, invoice_items(*)")
       .eq("org_id", org)
       .like("original_number", "9009%");
     const byNumber = Object.fromEntries((created ?? []).map((i) => [i.original_number, i]));
@@ -285,6 +285,10 @@ async function main() {
       byNumber["900901"]?.paid_at?.startsWith("2019-04-05") === true &&
         byNumber["900902"]?.paid_at?.startsWith("2019-04-06") === true,
       `${byNumber["900901"]?.paid_at} / ${byNumber["900902"]?.paid_at}`);
+    check("due date follows the invoice date when marked paid",
+      byNumber["900901"]?.due_date?.startsWith("2019-04-05") === true &&
+        byNumber["900902"]?.due_date?.startsWith("2019-04-06") === true,
+      `${byNumber["900901"]?.due_date} / ${byNumber["900902"]?.due_date}`);
 
     const { data: contacts } = await sb
       .from("contacts")

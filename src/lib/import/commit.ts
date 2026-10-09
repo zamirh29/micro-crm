@@ -395,7 +395,11 @@ export async function commitImport(
       let documentId: string
 
       if (isInvoice) {
-        const dueDate = row.dueDate ?? addDays(documentDate, DEFAULT_VALIDITY_DAYS)
+        const dueDate =
+          row.dueDate ??
+          (row.paidDate
+            ? documentDate
+            : addDays(documentDate, DEFAULT_VALIDITY_DAYS))
         const { data: invoice, error } = await supabase
           .from("invoices")
           .insert({

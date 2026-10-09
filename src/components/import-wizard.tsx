@@ -35,7 +35,7 @@ const FIELD_OPTIONS: FieldOption[] = [
   { key: "customerCompany", label: "Customer company", hint: "Fallback match / creates a contact" },
   { key: "title", label: "Title", hint: "Document title" },
   { key: "sentDate", label: "Sent date", hint: "Defaults to the invoice date" },
-  { key: "dueDate", label: "Due date", hint: "Defaults to 30 days after the invoice date" },
+  { key: "dueDate", label: "Due date", hint: "Defaults to the invoice date when marked paid, otherwise 30 days after it" },
   { key: "paidDate", label: "Paid date", hint: "Presence marks the invoice as paid" },
   { key: "acceptedDate", label: "Accepted date", hint: "Quotes only" },
   { key: "validUntil", label: "Valid until", hint: "Quotes only" },
