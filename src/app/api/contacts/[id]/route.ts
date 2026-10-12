@@ -11,6 +11,8 @@ const patchSchema = z.object({
   phone: z.string().nullish(),
   company: z.string().nullish(),
   status: z.enum(["lead", "prospect", "client", "inactive"]).optional(),
+  tax_rate: z.coerce.number().min(0).max(100).nullish(),
+  vat_registered: z.boolean().nullish(),
   notes: z.string().nullish(),
 })
 
@@ -68,7 +70,13 @@ export async function PATCH(
       orgId: auth.orgId,
       userId: auth.user.id,
       id,
-      input: parsed.data,
+      input: {
+        ...parsed.data,
+        vat_registered:
+          parsed.data.vat_registered === null
+            ? undefined
+            : parsed.data.vat_registered,
+      },
     })
     if (!contact) return jsonError("Customer not found", 404)
     return NextResponse.json({ contact })

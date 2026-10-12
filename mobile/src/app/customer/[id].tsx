@@ -62,8 +62,11 @@ export default function CustomerDetailScreen() {
       phone: customer.phone ?? '',
       company: customer.company ?? '',
       status: customer.status,
-      tax_rate: (customer as any).tax_rate !== null && (customer as any).tax_rate !== undefined ? String((customer as any).tax_rate) : '',
-      vat_registered: !!(customer as any).vat_registered,
+      tax_rate:
+        customer.tax_rate !== null && customer.tax_rate !== undefined
+          ? String(customer.tax_rate)
+          : '',
+      vat_registered: !!customer.vat_registered,
       notes: customer.notes ?? '',
     });
     setEditing(true);
@@ -90,6 +93,8 @@ export default function CustomerDetailScreen() {
           phone: form.phone.trim() || null,
           company: form.company.trim() || null,
           status: form.status,
+          tax_rate: form.tax_rate.trim() === '' ? null : Number(form.tax_rate),
+          vat_registered: form.vat_registered,
           notes: form.notes.trim() || null,
         },
       });
@@ -122,6 +127,29 @@ export default function CustomerDetailScreen() {
                 />
                 <Field label="Phone" value={form.phone} onChangeText={(v) => update('phone', v)} keyboardType="phone-pad" />
                 <Field label="Company" value={form.company} onChangeText={(v) => update('company', v)} />
+                <Field
+                  label="VAT Rate (%)"
+                  value={form.tax_rate}
+                  onChangeText={(v) => update('tax_rate', v)}
+                  keyboardType="decimal-pad"
+                  placeholder="0.00"
+                />
+                <Text style={styles.fieldLabel}>VAT Registered</Text>
+                <View style={styles.statusRow}>
+                  {([true, false] as const).map((val) => {
+                    const active = form.vat_registered === val;
+                    return (
+                      <Pressable
+                        key={String(val)}
+                        onPress={() => update('vat_registered', val)}
+                        style={[styles.statusChip, active && styles.statusChipActive]}>
+                        <Text style={[styles.statusChipText, active && styles.statusChipTextActive]}>
+                          {val ? 'Yes' : 'No'}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
                 <Text style={styles.fieldLabel}>Status</Text>
                 <View style={styles.statusRow}>
                   {STATUSES.map((status) => {
@@ -160,6 +188,15 @@ export default function CustomerDetailScreen() {
                 {customer.company ? <Row label="Company" value={customer.company} /> : null}
                 {customer.email ? <Row label="Email" value={customer.email} /> : null}
                 {customer.phone ? <Row label="Phone" value={customer.phone} /> : null}
+                <Row
+                  label="VAT Rate"
+                  value={
+                    customer.tax_rate !== null && customer.tax_rate !== undefined
+                      ? `${customer.tax_rate}%`
+                      : '—'
+                  }
+                />
+                <Row label="VAT Registered" value={customer.vat_registered ? 'Yes' : 'No'} />
                 <Row label="Added" value={formatDate(customer.created_at)} />
               </View>
 

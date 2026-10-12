@@ -6,6 +6,8 @@ export interface Contact {
   phone: string | null;
   company: string | null;
   status: 'lead' | 'prospect' | 'client' | 'inactive';
+  tax_rate: number | null;
+  vat_registered: boolean;
   created_at: string;
 }
 
