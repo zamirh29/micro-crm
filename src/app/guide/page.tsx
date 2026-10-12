@@ -1,3 +1,4 @@
+import { createClient } from "@/lib/supabase/server"
 import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
@@ -237,7 +238,9 @@ const sections: TourSection[] = [
   },
 ]
 
-export default function GuidePage() {
+export default async function GuidePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-b border-border">
@@ -252,18 +255,34 @@ export default function GuidePage() {
             >
               Pricing
             </Link>
-            <Link
-              href="/login"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/signup"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              Get Started
-            </Link>
+            {user ? (
+              <>
+                <span className="hidden text-sm text-muted-foreground sm:block">
+                  {user.email}
+                </span>
+                <Link
+                  href="/dashboard"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  Dashboard
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -278,12 +297,22 @@ export default function GuidePage() {
             leads, quotes, invoices, reminders and UK tax reporting.
           </p>
           <div className="mt-8 flex items-center justify-center gap-4">
-            <Link
-              href="/signup"
-              className="rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
-            >
-              Start Free
-            </Link>
+            {user ? (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+              >
+                Back to Dashboard
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <Link
+                href="/signup"
+                className="rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+              >
+                Start Free
+              </Link>
+            )}
             <Link
               href="/pricing"
               className="rounded-md border border-border bg-background px-6 py-3 text-sm font-semibold hover:bg-muted"
@@ -292,7 +321,9 @@ export default function GuidePage() {
             </Link>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            90 days free on the Free plan. Cancel anytime.
+            {user
+              ? "You are signed in. This tour shows the same screens you see in your account."
+              : "90 days free on the Free plan. Cancel anytime."}
           </p>
         </section>
 
@@ -363,16 +394,20 @@ export default function GuidePage() {
         <section className="border-t border-border py-16">
           <div className="mx-auto max-w-3xl px-4 text-center">
             <h2 className="text-2xl font-bold tracking-tight">
-              Ready to try it on your own customers?
+              {user
+                ? "Ready to get back to work?"
+                : "Ready to try it on your own customers?"}
             </h2>
             <p className="mt-3 text-muted-foreground">
-              90 days free on the Free plan. No card required.
+              {user
+                ? "Head back to your dashboard to pick up where you left off."
+                : "90 days free on the Free plan. No card required."}
             </p>
             <Link
-              href="/signup"
+              href={user ? "/dashboard" : "/signup"}
               className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
             >
-              Get Started
+              {user ? "Back to Dashboard" : "Get Started"}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
