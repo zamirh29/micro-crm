@@ -60,7 +60,7 @@ const sections: TourSection[] = [
     icon: Users,
     title: "Leads & customers",
     blurb:
-      "Every lead, prospect and client in one searchable list. Keep notes against the person, and see every quote and invoice you have raised for them without leaving the page.",
+      "Every lead, prospect and client in one searchable list. Set a per-customer VAT preference on their profile to pre-fill quotes and invoices. Keep notes against the person, and see every quote and invoice you have raised for them without leaving the page.",
     shots: [
       {
         src: "/guide/customers.png",
@@ -84,7 +84,7 @@ const sections: TourSection[] = [
     icon: FileText,
     title: "Quotes",
     blurb:
-      "Build a quote line by line, set the VAT rate and currency, then send it as a PDF. Accepted quotes convert to an invoice in a single click so nothing gets retyped.",
+      "Build a quote line by line - VAT defaults from the customer but remains editable - set the VAT rate and currency, then send it as a PDF. Accepted quotes convert to an invoice in a single click so nothing gets retyped.",
     shots: [
       {
         src: "/guide/quotes.png",
