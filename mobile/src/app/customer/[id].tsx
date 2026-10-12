@@ -35,6 +35,8 @@ type Form = {
   phone: string;
   company: string;
   status: Status;
+  tax_rate: string;
+  vat_registered: boolean;
   notes: string;
 };
 
@@ -60,6 +62,8 @@ export default function CustomerDetailScreen() {
       phone: customer.phone ?? '',
       company: customer.company ?? '',
       status: customer.status,
+      tax_rate: (customer as any).tax_rate !== null && (customer as any).tax_rate !== undefined ? String((customer as any).tax_rate) : '',
+      vat_registered: !!(customer as any).vat_registered,
       notes: customer.notes ?? '',
     });
     setEditing(true);
