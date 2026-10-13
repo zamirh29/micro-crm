@@ -10,6 +10,7 @@ import {
   Bell,
   Settings,
   BookOpen,
+  BookOpenCheck,
   LogOut,
   Landmark,
   ShieldCheck,
@@ -73,6 +74,7 @@ export default function Sidebar({
     },
     { label: "Settings", href: "/dashboard/settings", icon: Cog },
   { label: "Guide", href: "/guide", icon: BookOpen },
+    { label: "Manual", href: "/guide/manual", icon: BookOpenCheck },
     ...(isSuperAdmin
       ? [
           {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Plus, Trash2 } from "lucide-react"
 import { createInvoice, updateInvoice } from "../actions"
 import CustomerSelect from "@/components/customer-select"
+import AutoResizeTextarea from "@/components/auto-resize-textarea"
 import { CURRENCIES, currencySymbol, DEFAULT_COMPANY } from "@/lib/company"
 
 interface LineItem {
@@ -82,7 +83,6 @@ export default function InvoiceForm({
   const [duePreset, setDuePreset] = useState<string>(
     invoice ? "custom" : "30"
   )
-  const prevContactRef = { current: form.contact_id }
 
   function handlePresetChange(preset: string) {
     setDuePreset(preset)
@@ -105,10 +105,6 @@ export default function InvoiceForm({
   )
 
   const symbol = currencySymbol(form.currency)
-
-  const handleCustomerChange = (id: string) => {
-    setForm((prev) => ({ ...prev, contact_id: id }))
-  }
 
   function addItem() {
     setItems([...items, { description: "", quantity: 1, unit_price: 0 }])
@@ -421,15 +417,14 @@ export default function InvoiceForm({
                 className="flex items-start gap-3 rounded-md border border-border p-3"
               >
                 <div className="flex-1 space-y-3">
-                  <input
-                    type="text"
+                  <AutoResizeTextarea
                     required
                     value={item.description}
                     onChange={(e) =>
                       updateItem(index, "description", e.target.value)
                     }
                     placeholder="Item description"
-                    className="block w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm shadow-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="block min-h-[2.25rem] w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm shadow-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                   <div className="grid grid-cols-2 gap-3">
                     <div>

@@ -255,6 +255,12 @@ export default async function GuidePage() {
             >
               Pricing
             </Link>
+            <Link
+              href="/guide/manual"
+              className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:block"
+            >
+              Manual
+            </Link>
             {user ? (
               <>
                 <span className="hidden text-sm text-muted-foreground sm:block">
@@ -318,6 +324,12 @@ export default async function GuidePage() {
               className="rounded-md border border-border bg-background px-6 py-3 text-sm font-semibold hover:bg-muted"
             >
               View Pricing
+            </Link>
+            <Link
+              href="/guide/manual"
+              className="rounded-md border border-border bg-background px-6 py-3 text-sm font-semibold hover:bg-muted"
+            >
+              Step-by-Step Manual
             </Link>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">

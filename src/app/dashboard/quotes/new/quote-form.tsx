@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { createQuote, updateQuote } from "../actions"
 import CustomerSelect from "@/components/customer-select"
+import AutoResizeTextarea from "@/components/auto-resize-textarea"
 import {
   CURRENCIES,
   currencySymbol,
@@ -354,15 +355,14 @@ export default function QuoteForm({
                 key={index}
                 className="grid gap-3 sm:grid-cols-[1fr_auto_auto_auto_auto]"
               >
-                <input
-                  type="text"
+                <AutoResizeTextarea
                   placeholder="Description"
                   value={item.description}
                   onChange={(e) =>
                     updateItem(index, "description", e.target.value)
                   }
                   required
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
                 <input
                   type="number"
