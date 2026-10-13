@@ -213,7 +213,7 @@ const sections: TourSection[] = [
     icon: Settings,
     title: "Branding & settings",
     blurb:
-      "Put your own logo and details on the PDFs your clients see, and manage email templates and report emails from one place.",
+      "Put your own logo and company details on the PDFs your clients see - your branding carries across every quote, invoice and report. Automated report emails are scheduled under Reports > Report Emails.",
     shots: [
       {
         src: "/guide/settings.png",
