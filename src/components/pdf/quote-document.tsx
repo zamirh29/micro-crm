@@ -25,8 +25,8 @@ const styles = StyleSheet.create({
   },
   logoImage: {
     width: 144,
-    height: 144,
     objectFit: "contain",
+    objectPosition: "left top",
     marginBottom: 8,
   },
   companyName: {
