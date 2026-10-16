@@ -38,5 +38,18 @@
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "description": "Micro-business CRM for sole traders: customers, quotes, invoices, payment reminders, expenses, reports and PDF export, with a free plan and a Pro tier.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zamirh29/micro-crm.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zamirh29/micro-crm/issues"
+  },
+  "homepage": "https://github.com/zamirh29/micro-crm#readme"
 }

@@ -14,7 +14,11 @@ export async function GET(request: Request) {
     const { error, data } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
-      await ensureUserSetup(data.user.id, data.user.email ?? "")
+      await ensureUserSetup(
+        data.user.id,
+        data.user.email ?? "",
+        data.user.user_metadata?.business_type ?? "sole_trader"
+      )
       return NextResponse.redirect(`${origin}${next}`)
     }
   }
@@ -22,7 +26,7 @@ export async function GET(request: Request) {
   return NextResponse.redirect(`${origin}/login?error=auth_callback_error`)
 }
 
-async function ensureUserSetup(userId: string, email: string) {
+async function ensureUserSetup(userId: string, email: string, businessType: string) {
   const admin = createAdminClient()
 
   const { data: profile } = await admin
@@ -35,7 +39,7 @@ async function ensureUserSetup(userId: string, email: string) {
 
   const { data: org, error: orgError } = await admin
     .from("organizations")
-    .insert({ name: email.split("@")[0] })
+    .insert({ name: email.split("@")[0], business_type: businessType })
     .select("id")
     .single()
 

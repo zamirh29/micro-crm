@@ -4,6 +4,8 @@ export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue"
 export type ReminderStatus = "pending" | "sent" | "completed"
 export type MembershipRole = "owner" | "admin" | "member" | "viewer"
 
+export type BusinessType = "sole_trader" | "ltd" | "llp" | "plc" | "lbg"
+
 export interface Organization {
   id: string
   name: string
@@ -13,6 +15,7 @@ export interface Organization {
   email: string | null
   website: string | null
   currency: string
+  business_type: BusinessType
   created_at: string
 }
 
