@@ -120,6 +120,9 @@ export async function setOrgBusinessType(formData: FormData) {
   if (error) throw new Error(error.message)
 
   revalidatePath("/dashboard/admin")
+  // Full navigation so the table re-renders with the saved value instead of
+  // keeping the stale selection from the router cache.
+  redirect("/dashboard/admin?saved=business_type")
 }
 
 export async function openAccount(formData: FormData) {

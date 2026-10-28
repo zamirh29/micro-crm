@@ -19,7 +19,7 @@ const BUSINESS_TYPE_LABELS: Record<string, string> = {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; saved?: string }>
 }) {
   const sp = await searchParams
   const supabase = await createClient()
@@ -88,6 +88,12 @@ export default async function AdminPage({
         </div>
       )}
 
+      {sp.saved === "business_type" && (
+        <div className="rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-200">
+          Business type saved.
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-lg border border-border">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -121,6 +127,7 @@ export default async function AdminPage({
                     >
                       <input type="hidden" name="orgId" value={row.orgId} />
                       <select
+                        key={`${row.orgId}-${row.businessType}`}
                         name="businessType"
                         defaultValue={row.businessType}
                         className="rounded-md border border-border bg-background px-2 py-1.5 text-xs"
