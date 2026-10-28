@@ -3,10 +3,18 @@ import { ShieldCheck, BadgeCheck, LogIn } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { isSuperAdmin } from "@/lib/admin"
-import { setCustomerPlan, openAccount } from "./actions"
+import { setCustomerPlan, openAccount, setOrgBusinessType } from "./actions"
 import { formatDate } from "@/lib/utils"
 
 export const dynamic = "force-dynamic"
+
+const BUSINESS_TYPE_LABELS: Record<string, string> = {
+  sole_trader: "Sole trader",
+  ltd: "Limited company (Ltd)",
+  llp: "LLP",
+  plc: "PLC",
+  lbg: "LBG",
+}
 
 export default async function AdminPage({
   searchParams,
@@ -35,7 +43,7 @@ export default async function AdminPage({
         .order("created_at", { ascending: false }),
       admin.from("profiles").select("id, email, full_name"),
       admin.from("memberships").select("user_id, org_id, role"),
-      admin.from("organizations").select("id, name"),
+      admin.from("organizations").select("id, name, business_type"),
     ])
 
   const owners = memberships?.filter((m) => m.role === "owner") ?? []
@@ -50,7 +58,9 @@ export default async function AdminPage({
       userId: membership.user_id,
       email: profile?.email ?? "Unknown",
       fullName: profile?.full_name,
+      orgId: membership.org_id,
       orgName: org?.name ?? "Unknown",
+      businessType: org?.business_type ?? "sole_trader",
       plan: sub?.plan ?? "free",
       status: sub?.status ?? "active",
       createdAt: sub?.created_at ?? "",
@@ -66,8 +76,9 @@ export default async function AdminPage({
           Super Admin
         </h1>
         <p className="text-sm text-muted-foreground">
-          Open a customer&apos;s account to work directly in it, or activate or
-          revert Pro for customers without payment.
+          Open a customer&apos;s account to work directly in it, activate or
+          revert Pro for customers without payment, or change an
+          organization&apos;s business type.
         </p>
       </div>
 
@@ -84,6 +95,7 @@ export default async function AdminPage({
               <tr>
                 <th className="px-4 py-3 font-medium">Customer</th>
                 <th className="px-4 py-3 font-medium">Organization</th>
+                <th className="px-4 py-3 font-medium">Business type</th>
                 <th className="px-4 py-3 font-medium">Plan</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Active since</th>
@@ -102,6 +114,33 @@ export default async function AdminPage({
                     )}
                   </td>
                   <td className="px-4 py-3">{row.orgName}</td>
+                  <td className="px-4 py-3">
+                    <form
+                      action={setOrgBusinessType}
+                      className="flex items-center gap-2"
+                    >
+                      <input type="hidden" name="orgId" value={row.orgId} />
+                      <select
+                        name="businessType"
+                        defaultValue={row.businessType}
+                        className="rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                      >
+                        {Object.entries(BUSINESS_TYPE_LABELS).map(
+                          ([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          )
+                        )}
+                      </select>
+                      <button
+                        type="submit"
+                        className="rounded-md border border-border px-2 py-1.5 text-xs font-medium hover:bg-muted"
+                      >
+                        Save
+                      </button>
+                    </form>
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${

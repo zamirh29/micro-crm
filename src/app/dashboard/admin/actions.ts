@@ -15,6 +15,8 @@ import {
   impersonationCookieOptions,
 } from "@/lib/impersonation"
 
+const ALLOWED_BUSINESS_TYPES = ["sole_trader", "ltd", "llp", "plc", "lbg"] as const
+
 export async function setCustomerPlan(formData: FormData) {
   const supabase = await createClient()
   const {
@@ -70,6 +72,52 @@ export async function setCustomerPlan(formData: FormData) {
       status: "active",
     })
   }
+
+  revalidatePath("/dashboard/admin")
+}
+
+export async function setOrgBusinessType(formData: FormData) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) throw new Error("Unauthorized")
+  if (!isSuperAdmin(user.email)) throw new Error("Forbidden")
+
+  const orgId = formData.get("orgId")
+  const businessType = formData.get("businessType")
+
+  if (typeof orgId !== "string" || !orgId) {
+    throw new Error("Invalid organization")
+  }
+
+  if (
+    typeof businessType !== "string" ||
+    !ALLOWED_BUSINESS_TYPES.includes(
+      businessType as (typeof ALLOWED_BUSINESS_TYPES)[number]
+    )
+  ) {
+    throw new Error("Invalid business type")
+  }
+
+  const admin = createAdminClient()
+
+  const { data: org, error: orgError } = await admin
+    .from("organizations")
+    .select("id")
+    .eq("id", orgId)
+    .maybeSingle()
+
+  if (orgError) throw new Error(orgError.message)
+  if (!org) throw new Error("Organization not found")
+
+  const { error } = await admin
+    .from("organizations")
+    .update({ business_type: businessType })
+    .eq("id", orgId)
+
+  if (error) throw new Error(error.message)
 
   revalidatePath("/dashboard/admin")
 }
