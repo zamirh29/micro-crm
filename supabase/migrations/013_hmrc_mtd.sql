@@ -22,6 +22,8 @@ create table if not exists public.hmrc_connections (
   updated_at timestamptz not null default now()
 );
 
+drop trigger if exists set_hmrc_connections_updated_at on public.hmrc_connections;
+
 create trigger set_hmrc_connections_updated_at
   before update on public.hmrc_connections
   for each row execute function public.handle_updated_at();
