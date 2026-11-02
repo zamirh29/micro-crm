@@ -21,6 +21,8 @@ import {
   History,
   Coins,
   Upload,
+  FileSpreadsheet,
+  PlugZap,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { signOut } from "@/app/dashboard/actions"
@@ -56,7 +58,17 @@ export default function Sidebar({
     },
     { label: "Billing", href: "/dashboard/billing", icon: Settings },
     { label: "Tax Report", href: "/dashboard/tax", icon: Landmark },
+    {
+      label: "HMRC / MTD",
+      href: "/dashboard/integrations/hmrc",
+      icon: PlugZap,
+    },
     { label: "Sales Report", href: "/dashboard/reports/customers", icon: BarChart3 },
+    {
+      label: "Accounting Exports",
+      href: "/dashboard/reports/accounting-exports",
+      icon: FileSpreadsheet,
+    },
     {
       label: "Month-End Report",
       href: "/dashboard/reports/month-end",

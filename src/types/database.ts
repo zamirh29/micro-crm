@@ -16,6 +16,8 @@ export interface Organization {
   website: string | null
   currency: string
   business_type: BusinessType
+  vat_number: string | null
+  vat_registered: boolean
   created_at: string
 }
 
@@ -181,6 +183,35 @@ export interface RevenueCatWebhookEvent {
   outcome: string | null
 }
 
+export type HmrcEnvironment = "sandbox" | "production"
+
+export interface HmrcConnectionRow {
+  id: string
+  org_id: string
+  environment: HmrcEnvironment
+  vrn: string
+  access_token: string
+  refresh_token: string
+  token_expires_at: string
+  scope: string
+  connected_by: string | null
+  connected_at: string
+  updated_at: string
+}
+
+export interface HmrcVatSubmission {
+  id: string
+  org_id: string
+  vrn: string
+  period_key: string
+  period_from: string | null
+  period_to: string | null
+  payload: Record<string, unknown>
+  receipt: Record<string, unknown> | null
+  submitted_at: string
+  submitted_by: string | null
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -197,6 +228,8 @@ export interface Database {
       notifications: { Row: Notification }
       expenses: { Row: Expense }
       revenuecat_webhook_events: { Row: RevenueCatWebhookEvent }
+      hmrc_connections: { Row: HmrcConnectionRow }
+      hmrc_vat_submissions: { Row: HmrcVatSubmission }
     }
   }
 }
