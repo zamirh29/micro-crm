@@ -36,6 +36,10 @@ export default function RootLayout() {
               <Stack.Screen name="invoice/[id]" options={{ title: 'Invoice' }} />
               <Stack.Screen name="customer/[id]" options={{ title: 'Customer' }} />
               <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+              <Stack.Screen name="activity" options={{ title: 'Activity' }} />
+              <Stack.Screen name="import" options={{ title: 'Import history' }} />
+              <Stack.Screen name="exports" options={{ title: 'Accounting exports' }} />
+              <Stack.Screen name="hmrc" options={{ title: 'Making Tax Digital' }} />
             </Stack>
           </SplashGate>
         </AuthProvider>

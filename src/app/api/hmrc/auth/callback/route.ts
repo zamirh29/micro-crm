@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { exchangeAuthorizationCode } from "@/lib/hmrc/client"
 import { saveConnection } from "@/lib/hmrc/store"
+import { verifyMobileOAuthState } from "@/lib/hmrc/oauth-state"
 
 export const dynamic = "force-dynamic"
 
@@ -23,41 +24,68 @@ function settingsRedirect(request: Request, params: Record<string, string>) {
   return NextResponse.redirect(url)
 }
 
+/** Returns to the native app via its deep link instead of the web settings page. */
+function mobileRedirect(params: Record<string, string>) {
+  const url = new URL("microcrm://hmrc")
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value)
+  }
+  return new NextResponse(null, {
+    status: 302,
+    headers: { Location: url.toString(), "Cache-Control": "no-store" },
+  })
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const error = url.searchParams.get("error")
   const code = url.searchParams.get("code")
   const state = url.searchParams.get("state")
 
+  // A signed state means the authorisation started from the mobile app. It is
+  // verified before anything else so errors return to the app rather than to a
+  // web page the user cannot see.
+  const mobileState = state ? verifyMobileOAuthState(state) : null
+  const respond = (params: Record<string, string>) =>
+    mobileState ? mobileRedirect(params) : settingsRedirect(request, params)
+
   if (error) {
-    return settingsRedirect(request, {
+    return respond({
       error: url.searchParams.get("error_description") ?? error,
     })
   }
 
   if (!code || !state) {
-    return settingsRedirect(request, { error: "HMRC did not return an authorisation code." })
-  }
-
-  const cookieStore = await cookies()
-  const raw = cookieStore.get(STATE_COOKIE)?.value
-  cookieStore.delete(STATE_COOKIE)
-
-  if (!raw) {
-    return settingsRedirect(request, {
-      error: "The connection attempt expired. Please try again.",
-    })
+    return respond({ error: "HMRC did not return an authorisation code." })
   }
 
   let saved: StateCookie
-  try {
-    saved = JSON.parse(raw) as StateCookie
-  } catch {
-    return settingsRedirect(request, { error: "Invalid connection state." })
-  }
 
-  if (saved.state !== state) {
-    return settingsRedirect(request, { error: "Connection state mismatch." })
+  if (mobileState) {
+    saved = {
+      state,
+      orgId: mobileState.orgId,
+      userId: mobileState.userId,
+      vrn: mobileState.vrn,
+    }
+  } else {
+    const cookieStore = await cookies()
+    const raw = cookieStore.get(STATE_COOKIE)?.value
+    cookieStore.delete(STATE_COOKIE)
+
+    if (!raw) {
+      return respond({ error: "The connection attempt expired. Please try again." })
+    }
+
+    try {
+      saved = JSON.parse(raw) as StateCookie
+    } catch {
+      return respond({ error: "Invalid connection state." })
+    }
+
+    if (saved.state !== state) {
+      return respond({ error: "Connection state mismatch." })
+    }
   }
 
   try {
@@ -75,9 +103,9 @@ export async function GET(request: Request) {
       .update({ vat_number: saved.vrn, vat_registered: true })
       .eq("id", saved.orgId)
 
-    return settingsRedirect(request, { connected: "1" })
+    return respond({ connected: "1" })
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not connect to HMRC."
-    return settingsRedirect(request, { error: message })
+    return respond({ error: message })
   }
 }

@@ -14,6 +14,8 @@ import {
   type ColumnMap,
   type ImportKind,
 } from "@/lib/import/parse"
+import { extractPdfText } from "@/lib/import/pdf"
+import { textToGrid, isTextTable } from "@/lib/import/text"
 
 // Uploads are parsed in memory, and the hosting platform drops any request over
 // roughly 4MB with an opaque 413. Measured in production: 4MB reached the app,
@@ -41,7 +43,7 @@ const MAX_ROWS = 5000
 // ceiling has to comfortably exceed MAX_ROWS for the worst single file.
 const MAX_GRID_ROWS = MAX_ROWS + 100
 
-const ALLOWED_EXTENSIONS = [".xlsx", ".xlsm", ".csv"]
+const ALLOWED_EXTENSIONS = [".xlsx", ".xlsm", ".csv", ".pdf"]
 
 /** One decimal place, so a 3.5MB limit is not reported as "3MB". */
 function megabytes(bytes: number): string {
@@ -104,8 +106,9 @@ export async function POST(request: Request) {
     const { drafts, headers } = buildDrafts(grid, {
       kind,
       map,
-      // A converted form is already major units, whatever the toggle says.
-      inPence: isFormTable(grid) ? false : inPence,
+      // A converted form or an extracted PDF/photo is already major units,
+      // whatever the toggle says.
+      inPence: isFormTable(grid) || isTextTable(grid) ? false : inPence,
       sourceFile: parsed.data.sourceFile,
     })
 
@@ -145,7 +148,7 @@ export async function POST(request: Request) {
     }
     const name = file.name.toLowerCase()
     if (!ALLOWED_EXTENSIONS.some((ext) => name.endsWith(ext))) {
-      return jsonError(`${file.name} is not an .xlsx or .csv file`, 400)
+      return jsonError(`${file.name} is not an .xlsx, .csv or .pdf file`, 400)
     }
     totalBytes += file.size
   }
@@ -165,12 +168,19 @@ export async function POST(request: Request) {
     let grid: string[][]
     try {
       const buffer = await file.arrayBuffer()
-      const raw = name.endsWith(".csv")
-        ? parseCsv(new TextDecoder().decode(buffer))
-        : await parseXlsx(buffer)
-      // A printed form has no columns to detect, so it is rewritten into a
-      // table first and then handled exactly like every other upload.
-      grid = formToTable(raw) ?? raw
+      if (name.endsWith(".pdf")) {
+        // Only text-based PDFs reach here. A scan has no text layer and
+        // extractPdfText rejects it with a message pointing at the photo option.
+        const text = await extractPdfText(buffer)
+        grid = textToGrid(text, { fallbackNumber: file.name })
+      } else {
+        const raw = name.endsWith(".csv")
+          ? parseCsv(new TextDecoder().decode(buffer))
+          : await parseXlsx(buffer)
+        // A printed form has no columns to detect, so it is rewritten into a
+        // table first and then handled exactly like every other upload.
+        grid = formToTable(raw) ?? raw
+      }
     } catch (e) {
       // One unreadable file must not abandon the rest of the directory, so it
       // is collected and reported alongside the files that did parse.
@@ -203,8 +213,9 @@ export async function POST(request: Request) {
       drafts: buildDrafts(usedGrid, {
         kind,
         map: autoDetected,
-        // A converted form is already major units, whatever the toggle says.
-        inPence: isFormTable(usedGrid) ? false : inPence,
+        // A converted form or extracted text is already major units, whatever
+        // the toggle says.
+        inPence: isFormTable(usedGrid) || isTextTable(usedGrid) ? false : inPence,
         sourceFile: file.name,
       }).drafts,
       autoDetected,

@@ -44,8 +44,9 @@ export default async function ImportPage() {
         </Link>
         <h1 className="mt-2 text-2xl font-bold">Import invoices and quotes</h1>
         <p className="mt-1 text-muted-foreground">
-          Bring in documents you issued in an earlier system. Your own numbers are
-          kept as a reference, and MicroCRM assigns fresh numbers in date order.
+          Bring in documents you issued in an earlier system — spreadsheets,
+          text-based PDFs, or photos of paper invoices. Your own numbers are kept as
+          a reference, and MicroCRM assigns fresh numbers in date order.
         </p>
       </div>
 
@@ -56,7 +57,7 @@ export default async function ImportPage() {
           title="Import is a Pro feature"
           description="Upgrade to Pro to bring in your historical invoices and quotes."
           features={[
-            "Upload invoices and quotes from a spreadsheet",
+            "Upload spreadsheets, text-based PDFs or photos",
             "Your original numbers are kept for reference",
             "Customers are matched automatically",
             "Dates, totals and statuses are preserved",

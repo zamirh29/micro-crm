@@ -7,6 +7,9 @@ import {
   Upload,
   Loader2,
   FileSpreadsheet,
+  FileText,
+  Image as ImageIcon,
+  Camera,
   AlertTriangle,
   CheckCircle2,
   ArrowLeft,
@@ -20,6 +23,7 @@ import {
   type ImportDraft,
   type ColumnMap,
 } from "@/lib/import/parse"
+import { createOcrSession, prepareImage, type OcrSession } from "@/lib/import/ocr"
 
 interface FieldOption {
   key: ImportField
@@ -48,8 +52,10 @@ const FIELD_OPTIONS: FieldOption[] = [
   { key: "currency", label: "Currency", hint: "Defaults to GBP" },
 ]
 
-const ACCEPT = ".xlsx,.xlsm,.csv"
+const ACCEPT = ".xlsx,.xlsm,.csv,.pdf"
+const PHOTO_ACCEPT = "image/*"
 const MAX_FILES = 200
+const MAX_PHOTOS = 20
 const COMMIT_CHUNK = 1500
 
 // The hosting platform rejects any single request body over roughly 4MB with an
@@ -134,7 +140,24 @@ function signature(headers: string[]): string {
 
 function accepted(name: string): boolean {
   const lower = name.toLowerCase()
-  return lower.endsWith(".xlsx") || lower.endsWith(".xlsm") || lower.endsWith(".csv")
+  return (
+    lower.endsWith(".xlsx") ||
+    lower.endsWith(".xlsm") ||
+    lower.endsWith(".csv") ||
+    lower.endsWith(".pdf")
+  )
+}
+
+function isImageFile(file: File): boolean {
+  if (file.type.startsWith("image/")) return true
+  return /\.(png|jpe?g|webp|gif|bmp|tiff?)$/i.test(file.name)
+}
+
+/** A PDF, spreadsheet and photo each earn a different icon in the file list. */
+function fileIcon(name: string) {
+  if (/\.pdf$/i.test(name)) return FileText
+  if (/\.(png|jpe?g|webp|gif|bmp|tiff?)$/i.test(name)) return ImageIcon
+  return FileSpreadsheet
 }
 
 function readEntryFile(entry: DroppedEntry): Promise<File> {
@@ -204,6 +227,8 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
   const folderRef = useRef<HTMLInputElement>(null)
+  const photoRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
 
   // Without this, dropping a file slightly off the dropzone makes the browser
   // navigate to it, discarding the whole page and any review already done.
@@ -301,7 +326,10 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
       const supported = incoming.filter((file) => accepted(file.name))
       const ignored: RejectedFile[] = incoming
         .filter((file) => !accepted(file.name))
-        .map((file) => ({ fileName: file.name, reason: "Not an .xlsx or .csv file" }))
+        .map((file) => ({
+          fileName: file.name,
+          reason: "Not an .xlsx, .csv or .pdf file",
+        }))
 
       // Reported rather than dropped silently: a file this big can never fit in
       // one request, so it needs splitting by the user.
@@ -318,7 +346,7 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
         setError(
           oversized.length > 0
             ? "Those files are too large to upload. Split them into smaller spreadsheets and try again."
-            : "None of those files are .xlsx or .csv files"
+            : "None of those files are .xlsx, .csv or .pdf files"
         )
         setRejected(ignored)
         return
@@ -375,6 +403,121 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
     []
   )
 
+  /**
+   * Read photos on the device, then let the server do the field matching.
+   *
+   * Only text is uploaded. One Tesseract worker is reused for the whole batch,
+   * and a single unreadable photo is reported beside the ones that worked.
+   */
+  const scanImages = useCallback(
+    async (incoming: File[], forKind: ImportKind) => {
+      const images = incoming.filter(isImageFile)
+      const allRejected: RejectedFile[] = incoming
+        .filter((file) => !isImageFile(file))
+        .map((file) => ({ fileName: file.name, reason: "Not an image file" }))
+
+      if (images.length === 0) {
+        setError("None of those files are images")
+        setRejected(allRejected)
+        return
+      }
+
+      const usable = images.slice(0, MAX_PHOTOS)
+      if (images.length > MAX_PHOTOS) {
+        for (const file of images.slice(MAX_PHOTOS)) {
+          allRejected.push({
+            fileName: file.name,
+            reason: `Only ${MAX_PHOTOS} photos can be scanned at a time`,
+          })
+        }
+      }
+
+      setBusy(true)
+      setError(null)
+      setProgress("Starting the text reader…")
+
+      const allSheets: ParsedSheetResponse[] = []
+      let session: OcrSession | null = null
+
+      try {
+        session = await createOcrSession()
+
+        for (const [index, file] of usable.entries()) {
+          const label =
+            usable.length === 1 ? "photo" : `photo ${index + 1} of ${usable.length}`
+
+          try {
+            setProgress(`Preparing ${label}…`)
+            const prepared = await prepareImage(file)
+
+            setProgress(`Reading text from ${label}…`)
+            const text = await session.recognize(prepared, ({ status, progress }) => {
+              if (status === "recognizing text") {
+                setProgress(
+                  `Reading text from ${label} (${Math.round(progress * 100)}%)…`
+                )
+              }
+            })
+
+            if (text.trim().length < 10) {
+              allRejected.push({
+                fileName: file.name,
+                reason: "No readable text was found in that photo",
+              })
+              continue
+            }
+
+            setProgress(`Matching ${label} to invoice fields…`)
+            const res = await fetch("/api/import/text", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ text, fileName: file.name, kind: forKind }),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error ?? "Could not read that photo")
+
+            for (const sheet of (data.sheets ?? []) as ParsedSheetResponse[]) {
+              allSheets.push({ ...sheet, id: allSheets.length })
+            }
+            allRejected.push(...((data.rejected ?? []) as RejectedFile[]))
+          } catch (e) {
+            allRejected.push({
+              fileName: file.name,
+              reason: e instanceof Error ? e.message : "Could not read that photo",
+            })
+          }
+        }
+
+        if (allSheets.length === 0) {
+          setSheets([])
+          setRejected(allRejected)
+          setError(
+            "No invoice details could be read from those photos. Try a sharper, straight-on photo in good light, or upload a text-based PDF."
+          )
+          return
+        }
+
+        setSheets(
+          allSheets.map((sheet) => ({
+            ...sheet,
+            map: sheet.autoDetected ?? {},
+          }))
+        )
+        setRejected(allRejected)
+      } catch (e) {
+        setRejected(allRejected)
+        setError(
+          e instanceof Error ? e.message : "Could not start the photo text reader"
+        )
+      } finally {
+        if (session) await session.terminate().catch(() => {})
+        setBusy(false)
+        setProgress(null)
+      }
+    },
+    []
+  )
+
   async function handleDrop(event: React.DragEvent<HTMLDivElement>) {
     event.preventDefault()
     setDragging(false)
@@ -397,7 +540,25 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
       return
     }
 
-    await uploadFiles(picked, kind, inPence)
+    const images = picked.filter(isImageFile)
+    const documents = picked.filter((file) => !isImageFile(file))
+
+    // A mixed drop would replace the review table twice; ask for one kind at a
+    // time instead so nothing the user already reviewed is discarded.
+    if (images.length > 0 && documents.length > 0) {
+      setError("Drop either documents or photos, not both at once.")
+      return
+    }
+    if (images.length > 0) {
+      if (images.length > MAX_PHOTOS) {
+        setError(`Please scan ${MAX_PHOTOS} photos or fewer at a time.`)
+        return
+      }
+      await scanImages(images, kind)
+      return
+    }
+
+    await uploadFiles(documents, kind, inPence)
   }
 
   async function reparseGroup(group: SheetState[], nextMap: ColumnMap) {
@@ -521,6 +682,8 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
     setError(null)
     if (fileRef.current) fileRef.current.value = ""
     if (folderRef.current) folderRef.current.value = ""
+    if (photoRef.current) photoRef.current.value = ""
+    if (cameraRef.current) cameraRef.current.value = ""
   }
 
   if (outcome) {
@@ -626,12 +789,12 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
         </div>
 
         <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-          <h2 className="font-semibold">2. Upload your spreadsheet</h2>
+          <h2 className="font-semibold">2. Upload a spreadsheet, PDF or photo</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            One or many .xlsx or .csv files, one row per line item, with your own
-            invoice or quote number repeated on each line. Drag a whole folder in to
-            read several years at once. Nothing is created until you review it on the
-            next step.
+            Spreadsheets and text-based PDFs are read directly. Photos of paper
+            invoices are read on this device and then reviewed the same way. Drag a
+            whole folder in to read several years at once. Nothing is created until
+            you review it on the next step.
           </p>
 
           <div
@@ -647,7 +810,7 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
           >
             <FileSpreadsheet className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="mt-3 text-sm font-medium">
-              Drop {`${ACCEPT.replace(/,/g, " or ")}`} files here, or a folder
+              Drop spreadsheets, PDFs or photos here, or a folder
             </p>
 
             <input
@@ -675,6 +838,30 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
                 if (files.length > 0) uploadFiles(files, kind, inPence)
               }}
             />
+            <input
+              ref={photoRef}
+              type="file"
+              accept={PHOTO_ACCEPT}
+              multiple
+              data-import-input="photos"
+              className="sr-only"
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? [])
+                if (files.length > 0) scanImages(files, kind)
+              }}
+            />
+            <input
+              ref={cameraRef}
+              type="file"
+              accept={PHOTO_ACCEPT}
+              capture="environment"
+              data-import-input="camera"
+              className="sr-only"
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? [])
+                if (files.length > 0) scanImages(files, kind)
+              }}
+            />
 
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
               <button
@@ -695,7 +882,29 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
                 <FolderOpen className="h-4 w-4" />
                 Choose a folder
               </button>
+              <button
+                type="button"
+                onClick={() => cameraRef.current?.click()}
+                disabled={busy}
+                className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+              >
+                <Camera className="h-4 w-4" />
+                Scan with camera
+              </button>
+              <button
+                type="button"
+                onClick={() => photoRef.current?.click()}
+                disabled={busy}
+                className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+              >
+                <ImageIcon className="h-4 w-4" />
+                Choose photos
+              </button>
             </div>
+
+            <p className="mt-3 text-xs text-muted-foreground">
+              Scanned PDFs have no text layer — use Scan with camera for those.
+            </p>
 
             {progress && (
               <p className="mt-4 text-sm text-muted-foreground">{progress}</p>
@@ -714,8 +923,8 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
                 My amounts are already in pence
                 <span className="block text-xs text-muted-foreground">
                   Leave unticked if the sheet shows pounds, e.g. 120.50 for £120.50.
-                  Checking this halves values that are in pounds, so please check your
-                  sheet first.
+                  Only applies to spreadsheets — PDFs and photos are always read as
+                  pounds.
                 </span>
               </span>
             </label>
@@ -767,13 +976,14 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
         <ul className="mt-3 divide-y divide-border text-sm">
           {sheets.map((sheet) => {
             const sheetReady = sheet.drafts.filter((d) => !d.error).length
+            const Icon = fileIcon(sheet.fileName)
             return (
               <li
                 key={sheet.id}
                 className="flex flex-wrap items-center justify-between gap-2 py-2"
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <FileSpreadsheet className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <span className="truncate">{sheet.fileName}</span>
                 </span>
                 <span className="text-xs text-muted-foreground">
@@ -782,7 +992,7 @@ export default function ImportWizard({ orgCurrency }: { orgCurrency: string }) {
                     `, ${sheet.drafts.length - sheetReady} skipped`}
                   {sheet.truncated && (
                     <span className="ml-2 text-amber-700 dark:text-amber-400">
-                      truncated at 10,000 rows
+                      truncated at 5,000 rows
                     </span>
                   )}
                 </span>

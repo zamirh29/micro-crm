@@ -49,6 +49,40 @@ const COSTS_CARD = {
   href: '/costs' as Href,
 };
 
+type Tool = {
+  label: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  href: Href;
+};
+
+const TOOLS: Tool[] = [
+  {
+    label: 'Activity',
+    description: 'See changes and restore deletes',
+    icon: 'time-outline',
+    href: '/activity' as Href,
+  },
+  {
+    label: 'Import',
+    description: 'Spreadsheets, PDFs and photos',
+    icon: 'cloud-upload-outline',
+    href: '/import' as Href,
+  },
+  {
+    label: 'Exports',
+    description: 'CSV for Xero, QuickBooks, Sage',
+    icon: 'download-outline',
+    href: '/exports' as Href,
+  },
+  {
+    label: 'Making Tax Digital',
+    description: 'Connect HMRC and submit VAT',
+    icon: 'shield-checkmark-outline',
+    href: '/hmrc' as Href,
+  },
+];
+
 export default function DashboardScreen() {
   const navigation = useNavigation();
   const { data, loading, error, offline, refresh } = useApi<DashboardData>(
@@ -118,7 +152,39 @@ export default function DashboardScreen() {
 
             <View style={styles.divider} />
 
-            <Text style={styles.sectionTitle}>Recent activity</Text>
+            <Text style={styles.sectionTitle}>Tools</Text>
+            <View style={styles.cards}>
+              {TOOLS.map((tool) => (
+                <View key={tool.label} style={styles.toolCard}>
+                  <Link href={tool.href} asChild>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${tool.label}. ${tool.description}`}
+                      android_ripple={{ color: '#e5e7eb' }}
+                      style={styles.toolPress}>
+                      <View style={styles.toolIcon}>
+                        <Ionicons name={tool.icon} size={20} color="#4f46e5" />
+                      </View>
+                      <Text style={styles.toolLabel}>{tool.label}</Text>
+                      <Text style={styles.toolDescription}>{tool.description}</Text>
+                    </Pressable>
+                  </Link>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.sectionRow}>
+              <Text style={[styles.sectionTitle, styles.sectionTitleInline]}>
+                Recent activity
+              </Text>
+              <Link href={'/activity' as Href} asChild>
+                <Pressable hitSlop={8} accessibilityRole="button">
+                  <Text style={styles.viewAll}>View all</Text>
+                </Pressable>
+              </Link>
+            </View>
           </View>
         }
         renderItem={({ item }) => (
@@ -181,6 +247,54 @@ const styles = StyleSheet.create({
   cardLabel: {
     fontSize: 14,
     color: '#6b7280',
+  },
+  toolCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    width: '47.5%',
+    flexGrow: 0,
+    flexShrink: 0,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    overflow: 'hidden',
+  },
+  toolPress: {
+    padding: 12,
+    gap: 4,
+  },
+  toolIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 9,
+    backgroundColor: '#eef2ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  toolLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  toolDescription: {
+    fontSize: 13,
+    color: '#6b7280',
+    lineHeight: 18,
+  },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    paddingRight: 16,
+  },
+  sectionTitleInline: {
+    flex: 1,
+  },
+  viewAll: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4f46e5',
+    paddingBottom: 8,
   },
   wideCard: {
     backgroundColor: '#ffffff',

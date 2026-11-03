@@ -35,6 +35,17 @@ interface ApiOptions {
   cacheKey?: string;
 }
 
+async function errorFromResponse(res: Response): Promise<ApiError> {
+  let message = `Request failed (${res.status})`;
+  try {
+    const data = await res.json();
+    if (typeof data?.error === 'string') message = data.error;
+  } catch {
+    // keep default message
+  }
+  return new ApiError(res.status, message);
+}
+
 async function request<T>(path: string, method: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = {};
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
@@ -55,16 +66,43 @@ async function request<T>(path: string, method: string, body?: unknown): Promise
     clearTimeout(timeout);
   }
 
-  if (!res.ok) {
-    let message = `Request failed (${res.status})`;
-    try {
-      const data = await res.json();
-      if (typeof data?.error === 'string') message = data.error;
-    } catch {
-      // keep default message
+  if (!res.ok) throw await errorFromResponse(res);
+
+  return (await res.json()) as T;
+}
+
+/**
+ * Authenticated multipart upload.
+ *
+ * The Content-Type header is deliberately not set: fetch adds the multipart
+ * boundary itself. Uploads get a much longer timeout than JSON mutations
+ * because a spreadsheet or PDF can take a while on a mobile connection.
+ */
+export async function upload<T>(path: string, body: FormData): Promise<T> {
+  const headers: Record<string, string> = {};
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120000);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      headers,
+      body,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new ApiError(408, 'The upload took too long. Try a smaller file or a better connection.');
     }
-    throw new ApiError(res.status, message);
+    throw err;
+  } finally {
+    clearTimeout(timeout);
   }
+
+  if (!res.ok) throw await errorFromResponse(res);
 
   return (await res.json()) as T;
 }
