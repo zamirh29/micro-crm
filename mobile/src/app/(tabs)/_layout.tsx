@@ -1,5 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Link, Tabs, type Href } from 'expo-router';
+import { Pressable } from 'react-native';
+
+function HeaderNewButton({ href, label }: { href: Href; label: string }) {
+  return (
+    <Link href={href} asChild>
+      <Pressable
+        hitSlop={10}
+        style={{ marginRight: 14 }}
+        accessibilityRole="button"
+        accessibilityLabel={label}>
+        <Ionicons name="add-circle-outline" size={26} color="#4f46e5" />
+      </Pressable>
+    </Link>
+  );
+}
 
 export default function TabsLayout() {
   return (
@@ -21,6 +36,9 @@ export default function TabsLayout() {
         options={{
           title: 'Customers',
           tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
+          headerRight: () => (
+            <HeaderNewButton href={'/customer/new' as Href} label="New customer" />
+          ),
         }}
       />
       <Tabs.Screen
@@ -30,6 +48,9 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="document-text-outline" size={size} color={color} />
           ),
+          headerRight: () => (
+            <HeaderNewButton href={'/quote/edit/new' as Href} label="New quote" />
+          ),
         }}
       />
       <Tabs.Screen
@@ -37,6 +58,9 @@ export default function TabsLayout() {
         options={{
           title: 'Invoices',
           tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={color} />,
+          headerRight: () => (
+            <HeaderNewButton href={'/invoice/edit/new' as Href} label="New invoice" />
+          ),
         }}
       />
       <Tabs.Screen

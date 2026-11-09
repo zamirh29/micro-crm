@@ -1,3 +1,4 @@
+import { Link, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
@@ -9,6 +10,12 @@ import { currentMonth, formatMoney, monthLabel } from '@/lib/format';
 import type { SalesReport } from '@/lib/types';
 
 type Mode = 'month' | 'year';
+
+const REPORT_LINKS: { label: string; href: Href }[] = [
+  { label: 'Tax report', href: '/tax' as Href },
+  { label: 'Month-End report', href: '/month-end' as Href },
+  { label: 'Report emails', href: '/report-emails' as Href },
+];
 
 export default function ReportsScreen() {
   const [mode, setMode] = useState<Mode>('month');
@@ -74,6 +81,15 @@ export default function ReportsScreen() {
               <Stat label="Invoiced" value={totals?.invoicedTotal ?? 0} />
               <Stat label="Paid" value={totals?.paidTotal ?? 0} />
               <Stat label="Unpaid" value={totals?.unpaidTotal ?? 0} />
+            </View>
+            <View style={styles.reportLinks}>
+              {REPORT_LINKS.map((link) => (
+                <Link key={link.label} href={link.href} asChild>
+                  <Pressable style={styles.reportLink} accessibilityRole="button">
+                    <Text style={styles.reportLinkText}>{link.label}</Text>
+                  </Pressable>
+                </Link>
+              ))}
             </View>
             <Text style={styles.sectionTitle}>By customer</Text>
           </View>
@@ -189,6 +205,26 @@ const styles = StyleSheet.create({
   cardLabel: {
     fontSize: 14,
     color: '#6b7280',
+  },
+  reportLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+  },
+  reportLink: {
+    borderWidth: 1,
+    borderColor: '#c7d2fe',
+    backgroundColor: '#eef2ff',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  reportLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4f46e5',
   },
   sectionTitle: {
     fontSize: 18,

@@ -144,6 +144,113 @@ export interface ActivityResponse {
   windowDays: number;
 }
 
+export interface Reminder {
+  id: string;
+  contact_id: string | null;
+  quote_id: string | null;
+  invoice_id: string | null;
+  title: string;
+  description: string | null;
+  scheduled_at: string;
+  status: 'pending' | 'sent' | 'completed';
+  created_at: string;
+  contacts?: { first_name: string; last_name: string } | null;
+}
+
+export interface TaxBandRow {
+  label: string;
+  from: number;
+  to: number | null;
+  rate: number;
+  taxable: number;
+  tax: number;
+}
+
+export interface MtdStage {
+  assessmentYear: string;
+  threshold: number;
+  mtdStart: string;
+  description: string;
+}
+
+export interface TaxBand {
+  label: string;
+  from: number;
+  to: number | null;
+  rate: number;
+}
+
+export interface TaxReport {
+  taxYear: {
+    key: string;
+    label: string;
+    start: string;
+    end: string;
+    bands: TaxBand[];
+  };
+  paidPence: number;
+  invoicedPence: number;
+  expensesPence: number;
+  taxableIncome: number;
+  tax: {
+    gross: number;
+    totalTax: number;
+    effectiveRate: number;
+    rows: TaxBandRow[];
+  };
+  mtd: {
+    liable: boolean;
+    stage: MtdStage | null;
+    nextStage: MtdStage | null;
+  };
+  schedule: MtdStage[];
+}
+
+export interface MonthEndRow {
+  contactId: string;
+  name: string;
+  company: string | null;
+  email: string | null;
+  quoteCount: number;
+  quotedTotal: number;
+  invoiceCount: number;
+  invoicedTotal: number;
+  paidTotal: number;
+  unpaidTotal: number;
+}
+
+export interface MonthEndReport {
+  month: string;
+  label: string;
+  customerId: string | null;
+  includesSingleCustomer: boolean;
+  currency: string;
+  rows: MonthEndRow[];
+  totals: MonthEndRow;
+  customers: { id: string; name: string }[];
+  expenses: {
+    total: number;
+    byCategory: { category: string; amount: number }[];
+  };
+  grossProfit: number;
+  marginPct: number | null;
+}
+
+export type ReportType = 'sales' | 'month_end';
+export type ReportFrequency = 'daily' | 'weekly' | 'monthly';
+
+export interface ReportSubscription {
+  id: string;
+  report_type: ReportType;
+  frequency: ReportFrequency;
+  day_of_week: number | null;
+  day_of_month: number | null;
+  email: string;
+  enabled: boolean;
+  last_run_at: string | null;
+  created_at: string;
+}
+
 export type ImportKind = 'invoice' | 'quote';
 
 export interface ImportLineItem {

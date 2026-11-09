@@ -3,6 +3,7 @@ import { Link, useNavigation, type Href } from 'expo-router';
 import { useLayoutEffect } from 'react';
 import {
   FlatList,
+  Linking,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -12,7 +13,7 @@ import {
 
 import { ScreenState } from '@/components/screen-state';
 import { StatusChip } from '@/components/status-chip';
-import { useApi } from '@/lib/api';
+import { API_URL, useApi } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import type { DashboardData } from '@/lib/types';
 
@@ -41,7 +42,7 @@ const COUNT_CARDS: Card[] = [
   {
     key: 'pendingReminders',
     label: 'Reminders',
-    href: { pathname: '/invoices', params: { status: 'overdue' } },
+    href: '/reminders',
   },
 ];
 
@@ -53,10 +54,62 @@ type Tool = {
   label: string;
   description: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href: Href;
+  href?: Href;
+  external?: string;
 };
 
+const QUICK_ACTIONS: Tool[] = [
+  {
+    label: 'New customer',
+    description: 'Add a lead or client',
+    icon: 'person-add-outline',
+    href: '/customer/new' as Href,
+  },
+  {
+    label: 'New quote',
+    description: 'Send a price',
+    icon: 'document-text-outline',
+    href: '/quote/edit/new' as Href,
+  },
+  {
+    label: 'New invoice',
+    description: 'Bill a customer',
+    icon: 'receipt-outline',
+    href: '/invoice/edit/new' as Href,
+  },
+  {
+    label: 'New reminder',
+    description: 'Schedule a follow-up',
+    icon: 'notifications-outline',
+    href: '/reminder/new' as Href,
+  },
+];
+
 const TOOLS: Tool[] = [
+  {
+    label: 'Reminders',
+    description: 'Follow-ups and to-dos',
+    icon: 'notifications-outline',
+    href: '/reminders' as Href,
+  },
+  {
+    label: 'Tax report',
+    description: 'UK income tax and MTD',
+    icon: 'calculator-outline',
+    href: '/tax' as Href,
+  },
+  {
+    label: 'Month-End report',
+    description: 'Monthly sales and profit',
+    icon: 'calendar-outline',
+    href: '/month-end' as Href,
+  },
+  {
+    label: 'Report emails',
+    description: 'Scheduled reports to your inbox',
+    icon: 'mail-outline',
+    href: '/report-emails' as Href,
+  },
   {
     label: 'Activity',
     description: 'See changes and restore deletes',
@@ -80,6 +133,24 @@ const TOOLS: Tool[] = [
     description: 'Connect HMRC and submit VAT',
     icon: 'shield-checkmark-outline',
     href: '/hmrc' as Href,
+  },
+  {
+    label: 'Billing',
+    description: 'Manage your plan and invoices',
+    icon: 'card-outline',
+    href: '/billing' as Href,
+  },
+  {
+    label: 'Guide',
+    description: 'Product tour of MicroCRM',
+    icon: 'book-outline',
+    external: `${API_URL}/guide`,
+  },
+  {
+    label: 'Manual',
+    description: 'How every feature works',
+    icon: 'bookmarks-outline',
+    external: `${API_URL}/guide/manual`,
   },
 ];
 
@@ -129,6 +200,25 @@ export default function DashboardScreen() {
 
             <View style={styles.divider} />
 
+            <Text style={styles.sectionTitle}>Quick create</Text>
+            <View style={styles.cards}>
+              {QUICK_ACTIONS.map((action) => (
+                <View key={action.label} style={styles.toolCard}>
+                  <Link href={action.href as Href} asChild>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${action.label}. ${action.description}`}
+                      android_ripple={{ color: '#e5e7eb' }}
+                      style={styles.toolPress}>
+                      <ToolBody tool={action} />
+                    </Pressable>
+                  </Link>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.divider} />
+
             <Text style={styles.sectionTitle}>Costs</Text>
             <View style={styles.cardsFlush}>
               <View style={styles.wideCard}>
@@ -156,19 +246,28 @@ export default function DashboardScreen() {
             <View style={styles.cards}>
               {TOOLS.map((tool) => (
                 <View key={tool.label} style={styles.toolCard}>
-                  <Link href={tool.href} asChild>
+                  {tool.href ? (
+                    <Link href={tool.href} asChild>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`${tool.label}. ${tool.description}`}
+                        android_ripple={{ color: '#e5e7eb' }}
+                        style={styles.toolPress}>
+                        <ToolBody tool={tool} />
+                      </Pressable>
+                    </Link>
+                  ) : (
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`${tool.label}. ${tool.description}`}
                       android_ripple={{ color: '#e5e7eb' }}
+                      onPress={() => {
+                        Linking.openURL(tool.external as string).catch(() => {});
+                      }}
                       style={styles.toolPress}>
-                      <View style={styles.toolIcon}>
-                        <Ionicons name={tool.icon} size={20} color="#4f46e5" />
-                      </View>
-                      <Text style={styles.toolLabel}>{tool.label}</Text>
-                      <Text style={styles.toolDescription}>{tool.description}</Text>
+                      <ToolBody tool={tool} />
                     </Pressable>
-                  </Link>
+                  )}
                 </View>
               ))}
             </View>
@@ -205,6 +304,18 @@ export default function DashboardScreen() {
         }
       />
     </ScreenState>
+  );
+}
+
+function ToolBody({ tool }: { tool: Tool }) {
+  return (
+    <>
+      <View style={styles.toolIcon}>
+        <Ionicons name={tool.icon} size={20} color="#4f46e5" />
+      </View>
+      <Text style={styles.toolLabel}>{tool.label}</Text>
+      <Text style={styles.toolDescription}>{tool.description}</Text>
+    </>
   );
 }
 

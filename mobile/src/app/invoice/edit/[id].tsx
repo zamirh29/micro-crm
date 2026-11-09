@@ -49,6 +49,27 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const PAGE_OPTIONS = { title: 'Edit invoice' };
 
+function blankInvoice(): Invoice {
+  return {
+    id: 'new',
+    number: '',
+    title: '',
+    description: null,
+    status: 'draft',
+    currency: 'GBP',
+    tax_rate: 0,
+    subtotal: 0,
+    tax_amount: 0,
+    total: 0,
+    due_date: null,
+    paid_at: null,
+    sent_at: null,
+    notes: null,
+    created_at: new Date().toISOString(),
+    contact_id: '',
+  };
+}
+
 type EditBlock = 'plan' | 'paid' | null;
 
 type Form = {
@@ -69,22 +90,31 @@ type Item = { key: string; description: string; quantity: string; unit_price: st
 export default function InvoiceEditScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
+  const isNew = id === 'new';
   const { data, loading, error, refresh } = useApi<{
     invoice: Invoice;
     can_edit: boolean;
     can_edit_date: boolean;
     edit_block: EditBlock;
-  }>(id ? `/api/invoices/${id}` : null, `cache:invoice:${id}`);
+  }>(!isNew && id ? `/api/invoices/${id}` : null, `cache:invoice:${id}`);
   const invoice = data?.invoice;
-  const canEdit = data?.can_edit === true;
+  const canEdit = isNew || data?.can_edit === true;
   const canEditDate = data?.can_edit_date === true;
   const editBlock = data?.edit_block ?? null;
 
   return (
     <>
-      <Stack.Screen options={PAGE_OPTIONS} />
-      <ScreenState loading={loading && !invoice} error={error} onRetry={refresh}>
-        {!invoice ? (
+      <Stack.Screen options={isNew ? { title: 'New invoice' } : PAGE_OPTIONS} />
+      <ScreenState loading={!isNew && loading && !invoice} error={error} onRetry={refresh}>
+        {isNew ? (
+          <InvoiceEditForm
+            key="new"
+            id="new"
+            isNew
+            invoice={blankInvoice()}
+            canEditDate={false}
+          />
+        ) : !invoice ? (
           <Notice
             title="Invoice unavailable"
             body="This invoice could not be found. It may have been deleted."
@@ -110,10 +140,12 @@ function InvoiceEditForm({
   id,
   invoice,
   canEditDate,
+  isNew = false,
 }: {
   id: string;
   invoice: Invoice;
   canEditDate: boolean;
+  isNew?: boolean;
 }) {
   const [form, setForm] = useState<Form>(() => seedForm(invoice));
   const [items, setItems] = useState<Item[]>(() => seedItems(invoice));
@@ -207,6 +239,20 @@ function InvoiceEditForm({
         if (invoiceDate) body.invoice_date = invoiceDate;
         body.sent_at = form.sent_at.trim() || null;
         body.paid_at = form.paid_at.trim() || null;
+      }
+
+      if (isNew) {
+        const created = await api<{ invoice: { id: string } }>('/api/invoices', {
+          method: 'POST',
+          body,
+        });
+        await Promise.all(
+          ['all', 'draft', 'sent', 'paid', 'overdue'].map((status) =>
+            AsyncStorage.removeItem(`cache:invoices:${status}`).catch(() => {})
+          )
+        );
+        router.replace(`/invoice/${created.data.invoice.id}`);
+        return;
       }
 
       await api(`/api/invoices/${id}`, { method: 'PATCH', body });
@@ -491,6 +537,9 @@ function InvoiceEditForm({
                     style={styles.pickerRow}
                     onPress={() => {
                       update('contact_id', contact.id);
+                      if (contact.tax_rate !== null && contact.tax_rate !== undefined) {
+                        update('tax_rate', String(contact.tax_rate));
+                      }
                       setCustomerOpen(false);
                       setCustomerQuery('');
                     }}>

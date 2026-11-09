@@ -49,6 +49,27 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const PAGE_OPTIONS = { title: 'Edit quote' };
 
+function blankQuote(): Quote {
+  return {
+    id: 'new',
+    number: '',
+    title: '',
+    description: null,
+    status: 'draft',
+    currency: 'GBP',
+    tax_rate: 20,
+    subtotal: 0,
+    tax_amount: 0,
+    total: 0,
+    valid_until: null,
+    notes: null,
+    sent_at: null,
+    accepted_at: null,
+    created_at: new Date().toISOString(),
+    contact_id: '',
+  };
+}
+
 type EditBlock = 'plan' | 'paid' | null;
 
 type Form = {
@@ -56,6 +77,7 @@ type Form = {
   title: string;
   description: string;
   notes: string;
+  tax_rate: string;
   valid_until: string;
   quote_date: string;
   sent_at: string;
@@ -68,22 +90,31 @@ type Item = { key: string; description: string; quantity: string; unit_price: st
 export default function QuoteEditScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
+  const isNew = id === 'new';
   const { data, loading, error, refresh } = useApi<{
     quote: Quote;
     can_edit: boolean;
     can_edit_date: boolean;
     edit_block: EditBlock;
-  }>(id ? `/api/quotes/${id}` : null, `cache:quote:${id}`);
+  }>(!isNew && id ? `/api/quotes/${id}` : null, `cache:quote:${id}`);
   const quote = data?.quote;
-  const canEdit = data?.can_edit === true;
+  const canEdit = isNew || data?.can_edit === true;
   const canEditDate = data?.can_edit_date === true;
   const editBlock = data?.edit_block ?? null;
 
   return (
     <>
-      <Stack.Screen options={PAGE_OPTIONS} />
-      <ScreenState loading={loading && !quote} error={error} onRetry={refresh}>
-        {!quote ? (
+      <Stack.Screen options={isNew ? { title: 'New quote' } : PAGE_OPTIONS} />
+      <ScreenState loading={!isNew && loading && !quote} error={error} onRetry={refresh}>
+        {isNew ? (
+          <QuoteEditForm
+            key="new"
+            id="new"
+            isNew
+            quote={blankQuote()}
+            canEditDate={false}
+          />
+        ) : !quote ? (
           <Notice
             title="Quote unavailable"
             body="This quote could not be found. It may have been deleted."
@@ -109,10 +140,12 @@ function QuoteEditForm({
   id,
   quote,
   canEditDate,
+  isNew = false,
 }: {
   id: string;
   quote: Quote;
   canEditDate: boolean;
+  isNew?: boolean;
 }) {
   const [form, setForm] = useState<Form>(() => seedForm(quote));
   const [items, setItems] = useState<Item[]>(() => seedItems(quote));
@@ -130,14 +163,7 @@ function QuoteEditForm({
 
   const contacts = contactsData?.contacts ?? [];
 
-  const rawTaxRate = quote.tax_rate;
-  const taxRate =
-    typeof rawTaxRate === 'number' &&
-    Number.isFinite(rawTaxRate) &&
-    rawTaxRate >= 0 &&
-    rawTaxRate <= 100
-      ? rawTaxRate
-      : 0;
+  const taxRate = parseTaxRate(form.tax_rate);
 
   const subtotal = items.reduce(
     (sum, item) => sum + parseQuantity(item.quantity) * parsePrice(item.unit_price),
@@ -214,6 +240,20 @@ function QuoteEditForm({
         if (quoteDate) body.quote_date = quoteDate;
         body.sent_at = form.sent_at.trim() || null;
         body.accepted_at = form.accepted_at.trim() || null;
+      }
+
+      if (isNew) {
+        const created = await api<{ quote: { id: string } }>('/api/quotes', {
+          method: 'POST',
+          body,
+        });
+        await Promise.all(
+          ['all', 'draft', 'sent', 'accepted', 'rejected', 'expired'].map((status) =>
+            AsyncStorage.removeItem(`cache:quotes:${status}`).catch(() => {})
+          )
+        );
+        router.replace(`/quote/${created.data.quote.id}`);
+        return;
       }
 
       await api(`/api/quotes/${id}`, { method: 'PATCH', body });
@@ -340,6 +380,16 @@ function QuoteEditForm({
                 />
               </Field>
             ) : null}
+
+            <Field label="Tax rate (%)">
+              <TextInput
+                style={styles.input}
+                value={form.tax_rate}
+                onChangeText={(value) => update('tax_rate', value)}
+                placeholder="20"
+                keyboardType="decimal-pad"
+              />
+            </Field>
 
             <Field label="Currency">
               <Pressable
@@ -483,6 +533,9 @@ function QuoteEditForm({
                     style={styles.pickerRow}
                     onPress={() => {
                       update('contact_id', contact.id);
+                      if (contact.tax_rate !== null && contact.tax_rate !== undefined) {
+                        update('tax_rate', String(contact.tax_rate));
+                      }
                       setCustomerOpen(false);
                       setCustomerQuery('');
                     }}>
@@ -604,6 +657,10 @@ function seedForm(quote: Quote): Form {
     title: quote.title ?? '',
     description: quote.description ?? '',
     notes: quote.notes ?? '',
+    tax_rate:
+      quote.tax_rate === null || quote.tax_rate === undefined
+        ? '20'
+        : String(quote.tax_rate),
     valid_until: quote.valid_until ?? '',
     quote_date: quote.created_at.slice(0, 10),
     sent_at: quote.sent_at ? quote.sent_at.slice(0, 10) : '',
@@ -638,6 +695,8 @@ function validate(form: Form, items: Item[], canEditDate: boolean): string | nul
     const acceptedAt = form.accepted_at.trim();
     if (acceptedAt && !DATE_RE.test(acceptedAt)) return 'Accepted date must be YYYY-MM-DD';
   }
+  const tax = Number.parseFloat(form.tax_rate || '0');
+  if (!Number.isFinite(tax) || tax < 0 || tax > 100) return 'Tax rate must be between 0 and 100';
   if (items.length === 0) return 'Add at least one line item';
   for (const [index, item] of items.entries()) {
     if (!item.description.trim()) return `Line item ${index + 1} needs a description`;
@@ -661,6 +720,11 @@ function parseQuantity(value: string): number {
 function parsePrice(value: string): number {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function parseTaxRate(value: string): number {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 100 ? parsed : 0;
 }
 
 function currencyLabel(code: string): string {

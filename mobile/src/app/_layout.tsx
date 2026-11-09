@@ -35,11 +35,18 @@ export default function RootLayout() {
               <Stack.Screen name="quote/[id]" options={{ title: 'Quote' }} />
               <Stack.Screen name="invoice/[id]" options={{ title: 'Invoice' }} />
               <Stack.Screen name="customer/[id]" options={{ title: 'Customer' }} />
+              <Stack.Screen name="customer/new" options={{ title: 'New customer' }} />
               <Stack.Screen name="settings" options={{ title: 'Settings' }} />
               <Stack.Screen name="activity" options={{ title: 'Activity' }} />
               <Stack.Screen name="import" options={{ title: 'Import history' }} />
               <Stack.Screen name="exports" options={{ title: 'Accounting exports' }} />
               <Stack.Screen name="hmrc" options={{ title: 'Making Tax Digital' }} />
+              <Stack.Screen name="reminders" options={{ title: 'Reminders' }} />
+              <Stack.Screen name="reminder/new" options={{ title: 'New reminder' }} />
+              <Stack.Screen name="tax" options={{ title: 'Tax report' }} />
+              <Stack.Screen name="month-end" options={{ title: 'Month-End report' }} />
+              <Stack.Screen name="report-emails" options={{ title: 'Report emails' }} />
+              <Stack.Screen name="billing" options={{ title: 'Billing' }} />
             </Stack>
           </SplashGate>
         </AuthProvider>
