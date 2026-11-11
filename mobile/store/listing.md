@@ -74,8 +74,8 @@ https://crm.dtmstechsolutions.co.uk/privacy
 All functionality requires a MicroCRM account.
 
 ```
-Email: <demo account email>
-Password: <demo account password>
+Email: demo@demo.co.uk
+Password: Ranjita2
 ```
 
 Add a note for reviewers:
