@@ -25,7 +25,7 @@ export default function SignupPage() {
     }
 
     setLoading(true)
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -40,7 +40,14 @@ export default function SignupPage() {
       return
     }
 
-    router.push("/auth/check-email")
+    // Email confirmation off: Supabase returns a session and the user is signed in.
+    if (data.session) {
+      router.push("/dashboard")
+      router.refresh()
+      return
+    }
+
+    router.push(`/check-email?email=${encodeURIComponent(email)}`)
   }
 
   return (
@@ -50,7 +57,7 @@ export default function SignupPage() {
           <h1 className="text-3xl font-bold tracking-tight">Create your account</h1>
           <p className="mt-2 text-sm text-gray-600">
             Already have an account?{" "}
-            <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+            <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
               Sign in
             </Link>
           </p>
