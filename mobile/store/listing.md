@@ -105,4 +105,25 @@ Financial features are bookkeeping tools; no lending, trading or payments proces
 
 - `icon-512.png` — 512×512 PNG
 - `feature-graphic-1024x500.png` — 1024×500 PNG
-- Phone screenshots — TODO (need 2–8 at 1080×1920 or similar)
+- Phone screenshots — `screenshots/01-dashboard.png` … `screenshots/06-tools.png`
+
+## Phone screenshots (upload in this order)
+
+All 1394×2772, 24-bit PNG (no alpha), 242–513 KB. Captured on the 1.0.8 build
+signed in to the demo workspace, with the 20:9 image padded 57 px per side with
+the exact edge colour so the long side is 1.989× the short side — inside Google
+Play's 2:1 limit — without cropping or stretching any UI.
+
+| # | File | Screen | Alt text (140 chars max) |
+|---|------|--------|--------------------------|
+| 1 | `01-dashboard.png` | Dashboard | Dashboard showing active quotes, unpaid invoices, reminders and quick-create actions for customers, quotes and invoices. |
+| 2 | `02-invoices.png` | Invoices | Invoice list with Draft, Sent, Paid and Overdue tabs plus amounts and customer names. |
+| 3 | `03-costs.png` | Costs | Costs screen for November 2026 listing expenses by category with monthly spend total. |
+| 4 | `04-tax-report.png` | Tax report | Tax report for 2026/27 with paid income, expenses, taxable profit and UK income tax bands. |
+| 5 | `05-import.png` | Import history | Import screen offering spreadsheet, text PDF or photo import, with pence and VAT options. |
+| 6 | `06-tools.png` | Tools grid | Dashboard tools grid linking to reminders, tax report, month-end report, report emails, activity, import, exports and HMRC. |
+
+Screenshots 1–3 are the "core UI first" shots; keep them in that order. Every
+screenshot shows the demo workspace (`demo@demo.co.uk`), so no real customer
+data is exposed. `_contact-sheet.png` is a review-only 3×2 preview — do not
+upload it.
