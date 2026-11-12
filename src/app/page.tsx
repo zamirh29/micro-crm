@@ -173,8 +173,18 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t border-border py-6">
-        <div className="mx-auto max-w-6xl px-4 text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} MicroCRM. All rights reserved.
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-4 text-sm text-muted-foreground sm:flex-row sm:justify-between">
+          <p>
+            &copy; {new Date().getFullYear()} MicroCRM. All rights reserved.
+          </p>
+          <p className="flex items-center gap-4">
+            <Link href="/privacy" className="hover:text-foreground">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-foreground">
+              Terms
+            </Link>
+          </p>
         </div>
       </footer>
     </div>

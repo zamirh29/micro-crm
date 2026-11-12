@@ -223,6 +223,24 @@ export default function SettingsScreen() {
         <Text style={styles.value}>{API_URL}</Text>
       </View>
 
+      <Text style={styles.sectionTitle}>Legal</Text>
+      <View style={styles.card}>
+        <Pressable
+          onPress={() => Linking.openURL(`${API_URL}/privacy`)}
+          accessibilityRole="link"
+          accessibilityLabel="Open the privacy policy"
+        >
+          <Text style={styles.link}>Privacy policy</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => Linking.openURL(`${API_URL}/terms`)}
+          accessibilityRole="link"
+          accessibilityLabel="Open the terms of service"
+        >
+          <Text style={styles.link}>Terms of service</Text>
+        </Pressable>
+      </View>
+
       <Pressable style={styles.signOut} onPress={confirmSignOut}>
         <Text style={styles.signOutText}>Sign out</Text>
       </Pressable>
@@ -263,6 +281,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     marginTop: 2,
+  },
+  link: {
+    fontSize: 16,
+    color: '#4F46E5',
+    fontWeight: '600',
+    paddingVertical: 6,
   },
   upgradeButton: {
     marginTop: 12,
