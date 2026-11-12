@@ -194,7 +194,8 @@ export default function PrivacyPage() {
         Under the UK GDPR you have the right to access, correct, delete, restrict
         or object to our processing of your personal data, and to data
         portability. You can export your records from the app at any time, and you
-        can delete your account from Settings.
+        can ask us to delete your account on our{" "}
+        <Link href="/delete-account">delete account page</Link>.
       </p>
       <p>
         To exercise any right, email{" "}

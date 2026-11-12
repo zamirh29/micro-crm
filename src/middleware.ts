@@ -56,6 +56,7 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/pricing") ||
     request.nextUrl.pathname.startsWith("/privacy") ||
     request.nextUrl.pathname.startsWith("/terms") ||
+    request.nextUrl.pathname.startsWith("/delete-account") ||
     request.nextUrl.pathname.startsWith("/guide")
 
   if (!user && !isAuthPage && !isPublicPage && !isResetPage) {

@@ -193,7 +193,8 @@ export default function TermsPage() {
 
       <h2>12. Ending the agreement</h2>
       <p>
-        You may close your account at any time from Settings. We may suspend or
+        You may close your account at any time using the steps on our{" "}
+        <Link href="/delete-account">delete account page</Link>. We may suspend or
         terminate your access for breach of these terms, non-payment, or where
         required by law. On closure we delete or anonymise your data in line with
         the retention periods in our <Link href="/privacy">privacy policy</Link>.

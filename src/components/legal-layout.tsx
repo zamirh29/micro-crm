@@ -63,6 +63,10 @@ export function LegalLayout({
             ·{" "}
             <Link href="/terms" className="hover:text-foreground">
               Terms of service
+            </Link>{" "}
+            ·{" "}
+            <Link href="/delete-account" className="hover:text-foreground">
+              Delete account
             </Link>
           </p>
         </div>

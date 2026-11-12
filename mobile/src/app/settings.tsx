@@ -239,6 +239,13 @@ export default function SettingsScreen() {
         >
           <Text style={styles.link}>Terms of service</Text>
         </Pressable>
+        <Pressable
+          onPress={() => Linking.openURL(`${API_URL}/delete-account`)}
+          accessibilityRole="link"
+          accessibilityLabel="Open the account deletion instructions"
+        >
+          <Text style={styles.link}>Delete my account</Text>
+        </Pressable>
       </View>
 
       <Pressable style={styles.signOut} onPress={confirmSignOut}>
