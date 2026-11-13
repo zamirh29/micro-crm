@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -124,24 +125,37 @@ export default function BillingScreen() {
                 : 'Upgrade to unlock unlimited customers, quotes, invoices and reports.'}
             </Text>
 
-            <Pressable
-              style={styles.primaryButton}
-              onPress={openWebBilling}
-              accessibilityRole="button"
-              accessibilityLabel="Open billing on the web">
-              <Ionicons name="open-outline" size={18} color="#ffffff" />
-              <Text style={styles.primaryText}>
-                {isPro ? 'Manage billing on the web' : 'Upgrade to Pro on the web'}
-              </Text>
-            </Pressable>
+            {Platform.OS === 'android' ? null : (
+              <Pressable
+                style={styles.primaryButton}
+                onPress={openWebBilling}
+                accessibilityRole="button"
+                accessibilityLabel="Open billing on the web">
+                <Ionicons name="open-outline" size={18} color="#ffffff" />
+                <Text style={styles.primaryText}>
+                  {isPro ? 'Manage billing on the web' : 'Upgrade to Pro on the web'}
+                </Text>
+              </Pressable>
+            )}
 
             <Pressable
-              style={styles.secondaryButton}
+              style={Platform.OS === 'android' ? styles.primaryButton : styles.secondaryButton}
               onPress={() => router.push('/settings')}
               accessibilityRole="button"
               accessibilityLabel="Open settings for in-app purchases">
-              <Text style={styles.secondaryText}>Buy in the app (Settings)</Text>
-              <Ionicons name="chevron-forward" size={17} color="#4f46e5" />
+              {Platform.OS === 'android' ? (
+                <>
+                  <Ionicons name="cart-outline" size={18} color="#ffffff" />
+                  <Text style={styles.primaryText}>
+                    {isPro ? 'Manage subscription' : 'Upgrade in the app'}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.secondaryText}>Buy in the app (Settings)</Text>
+                  <Ionicons name="chevron-forward" size={17} color="#4f46e5" />
+                </>
+              )}
             </Pressable>
           </>
         )}
@@ -175,9 +189,9 @@ export default function BillingScreen() {
       <View style={styles.helpCard}>
         <Text style={styles.helpTitle}>Where to manage your plan</Text>
         <Text style={styles.helpText}>
-          Web subscriptions are managed through Stripe from the web dashboard. If you
-          subscribed through the App Store or Google Play, use Settings → Manage
-          subscription in this app.
+          {Platform.OS === 'android'
+            ? 'Subscriptions bought in this app are handled by Google Play. Use Settings → Manage subscription to view, change or cancel your plan.'
+            : 'Web subscriptions are managed through Stripe from the web dashboard. If you subscribed through the App Store, use Settings → Manage subscription in this app.'}
         </Text>
       </View>
     </ScrollView>
