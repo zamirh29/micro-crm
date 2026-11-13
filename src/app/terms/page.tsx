@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 }
 
 const UPDATED = "12 November 2026"
-const CONTACT = "zamir@dtmstechsolutions.co.uk"
+const CONTACT = "enquiries@dtmstechsolutions.co.uk"
 
 export default function TermsPage() {
   return (
