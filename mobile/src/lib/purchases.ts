@@ -32,7 +32,13 @@ export function isPurchasesSupported(): boolean {
   if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
     return false;
   }
-  return Boolean(apiKey());
+  const key = apiKey();
+  if (!key) return false;
+  // RevenueCat aborts the process when a release build is configured with a Test
+  // Store (`test_`) key. Release builds therefore stay purchase-free until the
+  // platform key (goog_/appl_) is in place, instead of crashing on launch.
+  if (key.startsWith('test_') && !__DEV__) return false;
+  return true;
 }
 
 let currentAppUserId: string | null = null;
@@ -48,6 +54,12 @@ export async function initializePurchases(
 
   const key = apiKey();
   if (!key) return null;
+
+  if (__DEV__ && key.startsWith('test_')) {
+    console.log(
+      '[purchases] RevenueCat Test Store key in use: purchases are simulated and never charged.',
+    );
+  }
 
   const configured = await Purchases.isConfigured();
 

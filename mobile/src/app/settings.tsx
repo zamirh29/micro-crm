@@ -40,6 +40,7 @@ export default function SettingsScreen() {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [proOnWeb, setProOnWeb] = useState(false);
   const [price, setPrice] = useState<string | null>(null);
+  const [storeReady, setStoreReady] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -53,6 +54,7 @@ export default function SettingsScreen() {
       if (!active) return;
       setCustomerInfo(info);
       setPrice(pkg?.product.priceString ?? null);
+      setStoreReady(Boolean(pkg));
     })().catch(() => {
       // Store state is non-critical; the account section still renders.
     });
@@ -148,7 +150,7 @@ export default function SettingsScreen() {
 
   const proOnStore = hasProEntitlement(customerInfo);
   const isPro = proOnStore || proOnWeb;
-  const canBuyInApp = isPurchasesSupported() && !isPro;
+  const canBuyInApp = isPurchasesSupported() && storeReady && !isPro;
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -194,8 +196,9 @@ export default function SettingsScreen() {
               </Pressable>
             ) : (
               <Text style={styles.hint}>
-                In-app purchase is unavailable in this build. Manage your plan on
-                the web instead.
+                {isPurchasesSupported()
+                  ? 'The Pro subscription is not available right now. Please try again later.'
+                  : 'In-app purchase is unavailable in this build.'}
               </Text>
             )}
             {isPurchasesSupported() ? (
