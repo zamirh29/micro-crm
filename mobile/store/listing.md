@@ -13,15 +13,15 @@ MicroCRM: Invoicing & Tax
 ## Short description (max 80 chars)
 
 ```
-Invoices, quotes, expenses and HMRC tax reports for UK sole traders.
+Invoices, quotes, expenses and HMRC tax reports for UK businesses.
 ```
 
 ## Full description (max 4000 chars)
 
 ```
-MicroCRM is a straightforward CRM and accounting app for UK sole traders, freelancers and small businesses. Create customers, send invoices and quotes, track expenses, and see exactly where your money is going — without spreadsheet chaos.
+MicroCRM is a straightforward CRM and accounting app for UK businesses, sole traders and freelancers. Create customers, send invoices and quotes, track expenses, and see exactly where your money is going — without spreadsheet chaos.
 
-BUILT FOR UK SOLE TRADERS
+BUILT FOR UK BUSINESSES
 • Invoices and quotes with your own logo, payment terms and VAT settings
 • Record payments and see what is still outstanding at a glance
 • Track expenses and attach receipts
@@ -63,7 +63,7 @@ Business
 
 - Email: enquiries@dtmstechsolutions.co.uk
 - Phone: +44 7463 594253
-- Website: https://www.dtmstechsolutions.co.uk
+- Website: https://crm.dtmstechsolutions.co.uk
 
 ## Privacy policy URL
 
