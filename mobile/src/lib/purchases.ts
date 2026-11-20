@@ -12,7 +12,7 @@ import Purchases, {
  * Entitlement identifier in the RevenueCat dashboard that grants Pro.
  * Must match REVENUECAT_PRO_ENTITLEMENT_ID on the backend.
  */
-export const PRO_ENTITLEMENT = 'pro';
+export const PRO_ENTITLEMENT = 'dtms_crm_pro';
 
 function apiKey(): string | undefined {
   if (Platform.OS === 'ios') return process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY;
