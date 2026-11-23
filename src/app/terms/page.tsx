@@ -33,8 +33,8 @@ export default function TermsPage() {
       <p>
         MicroCRM helps small businesses manage customers, quotes, invoices,
         expenses, reminders and UK tax reporting. It also offers spreadsheet, PDF
-        and photo imports, accounting exports and Making Tax Digital features.
-        Features may change as the product develops.
+        and photo imports, accounting exports, Making Tax Digital features and a
+        read-only web bank feed. Features may change as the product develops.
       </p>
 
       <h2>2. Not tax or legal advice</h2>
@@ -161,13 +161,22 @@ export default function TermsPage() {
         terms, or if we are required to by law.
       </p>
 
-      <h2>8. Imports and third-party services</h2>
+      <h2>8. Imports, bank feeds and third-party services</h2>
       <p>
         Imports are provided as an aid. Always check extracted data before saving
         it. MicroCRM relies on third parties such as Supabase, Vercel, Resend,
         Stripe, Google Play, Apple App Store, RevenueCat and HMRC; we are not responsible for
         outages or errors caused by those services, though we will work to restore
         service quickly.
+      </p>
+      <p>
+        The web bank feed is read-only and uses TrueLayer for Open Banking
+        authentication and data access. You must not connect an account you are
+        not authorised to access. Suggested invoice matches and expense categories
+        are aids only; you remain responsible for checking each transaction before
+        posting it. Bank connections are country- and bank-specific, and live
+        availability depends on TrueLayer approval and coverage. CSV and OFX
+        statement import remains available as a manual fallback.
       </p>
 
       <h2>9. Availability and changes</h2>

@@ -51,6 +51,7 @@ export default function Sidebar({
     { label: "Invoices", href: "/dashboard/invoices", icon: Receipt },
     { label: "Reminders", href: "/dashboard/reminders", icon: Bell },
     { label: "Expenses", href: "/dashboard/expenses", icon: Coins },
+    { label: "Bank feed", href: "/dashboard/bank-feed", icon: Landmark },
     {
       label: "Import History",
       href: "/dashboard/import",

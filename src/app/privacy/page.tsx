@@ -73,6 +73,15 @@ export default function PrivacyPage() {
           submit through the app.
         </li>
         <li>
+          <strong>Bank feed data.</strong> If you connect a bank account on the
+          website, a regulated Open Banking provider handles authentication and
+          consent. We never see or store your bank username, password or one-time
+          codes. We store encrypted access and refresh tokens, the account
+          identifier and masked details, and the settled transactions the provider
+          returns. You can revoke a connection at any time; revocation removes the
+          stored tokens from MicroCRM.
+        </li>
+        <li>
           <strong>Technical data.</strong> IP address, device type, app version
           and error information generated when your request reaches our servers.
           These are used for security and to keep the service running.
@@ -93,6 +102,10 @@ export default function PrivacyPage() {
         <li>
           We do not upload the photos or files you import; only the extracted text
           is transmitted, and only when you start an import.
+        </li>
+        <li>
+          We do not ask for, receive or store your online banking credentials.
+          Bank connections are read-only and are authorised through the provider.
         </li>
       </ul>
 
@@ -156,6 +169,12 @@ export default function PrivacyPage() {
           <strong>HMRC</strong> — only when you connect and submit VAT returns
           through Making Tax Digital.
         </li>
+        <li>
+          <strong>TrueLayer</strong> — only when you choose Connect bank. It
+          handles bank authentication and supplies the read-only account and
+          transaction data you consent to share. We use TrueLayer&apos;s sandbox
+          host for testing and its production host only for live connections.
+        </li>
       </ul>
       <p>
         We may also disclose data where required by law, to enforce our terms, or
@@ -187,6 +206,12 @@ export default function PrivacyPage() {
         <li>
           Billing records are kept for six years to meet UK tax and accounting
           rules.
+        </li>
+        <li>
+          Bank feed tokens are kept until you revoke the connection or the bank
+          consent expires. Imported bank transactions are kept with your other
+          accounting records while your account is open, so that posted invoices
+          and expenses remain auditable.
         </li>
         <li>
           Server logs are kept for a short period for security and diagnostics,
