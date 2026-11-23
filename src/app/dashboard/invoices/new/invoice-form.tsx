@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { unstable_rethrow, useRouter } from "next/navigation"
 import { Plus, Trash2 } from "lucide-react"
 import { createInvoice, updateInvoice } from "../actions"
 import CustomerSelect from "@/components/customer-select"
@@ -167,6 +167,7 @@ export default function InvoiceForm({
       await createInvoice(fd)
       router.push("/dashboard/invoices")
     } catch (err) {
+      unstable_rethrow(err)
       setError(err instanceof Error ? err.message : "Something went wrong")
       setLoading(false)
     }

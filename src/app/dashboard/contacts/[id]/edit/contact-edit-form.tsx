@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Loader2 } from "lucide-react"
+import { unstable_rethrow } from "next/navigation"
 import { updateContact } from "../../actions"
 import { isCompanyContact } from "@/lib/utils"
 
@@ -43,6 +44,7 @@ export default function ContactEditForm({
     try {
       await updateContact(contact.id, formData)
     } catch (err) {
+      unstable_rethrow(err)
       setError(err instanceof Error ? err.message : "Something went wrong")
       setLoading(false)
     }

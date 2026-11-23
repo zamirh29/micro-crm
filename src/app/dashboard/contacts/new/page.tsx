@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { unstable_rethrow } from "next/navigation"
 import { createContact } from "../actions"
 
 export default function NewContactPage() {
@@ -21,6 +22,7 @@ export default function NewContactPage() {
     try {
       await createContact(formData)
     } catch (err) {
+      unstable_rethrow(err)
       setError(err instanceof Error ? err.message : "Something went wrong")
       setLoading(false)
     }

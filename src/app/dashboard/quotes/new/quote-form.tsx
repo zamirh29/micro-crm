@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { ArrowLeft, Plus, Trash2 } from "lucide-react"
 import Link from "next/link"
+import { unstable_rethrow } from "next/navigation"
 import { createQuote, updateQuote } from "../actions"
 import CustomerSelect from "@/components/customer-select"
 import AutoResizeTextarea from "@/components/auto-resize-textarea"
@@ -139,6 +140,7 @@ export default function QuoteForm({
         await createQuote(formData)
       }
     } catch (err) {
+      unstable_rethrow(err)
       setError(err instanceof Error ? err.message : "Something went wrong")
       setLoading(false)
     }

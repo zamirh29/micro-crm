@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Loader2, Upload, X, Building2 } from "lucide-react"
+import { unstable_rethrow } from "next/navigation"
 import { updateCompanyProfile } from "./actions"
 import { CURRENCIES, type CompanyProfile } from "@/lib/company"
 
@@ -72,6 +73,7 @@ export default function CompanyProfileForm({
       await updateCompanyProfile(formData)
       setSaved(true)
     } catch (err) {
+      unstable_rethrow(err)
       setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
       setLoading(false)
