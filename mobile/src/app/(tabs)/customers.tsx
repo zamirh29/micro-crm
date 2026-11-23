@@ -5,6 +5,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View 
 import { ScreenState } from '@/components/screen-state';
 import { StatusChip } from '@/components/status-chip';
 import { useApi } from '@/lib/api';
+import { contactDisplayName, contactInitials, contactSubtitle } from '@/lib/format';
 import type { Contact } from '@/lib/types';
 
 export default function CustomersScreen() {
@@ -44,21 +45,16 @@ export default function CustomersScreen() {
         renderItem={({ item }) => (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Open ${item.first_name} ${item.last_name}`}
+            accessibilityLabel={`Open ${contactDisplayName(item)}`}
             onPress={() => router.push(`/customer/${item.id}`)}
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {(item.first_name?.[0] ?? '?').toUpperCase()}
-                {(item.last_name?.[0] ?? '').toUpperCase()}
-              </Text>
+              <Text style={styles.avatarText}>{contactInitials(item)}</Text>
             </View>
             <View style={styles.main}>
-              <Text style={styles.name}>
-                {item.first_name} {item.last_name}
-              </Text>
+              <Text style={styles.name}>{contactDisplayName(item)}</Text>
               <Text style={styles.sub} numberOfLines={1}>
-                {item.company || item.email || '—'}
+                {contactSubtitle(item) || '—'}
               </Text>
             </View>
             <StatusChip status={item.status} />

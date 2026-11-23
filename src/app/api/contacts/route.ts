@@ -5,7 +5,7 @@ import { jsonError, readJson, errorFromThrown } from "@/lib/api-utils"
 import { createContactRecord } from "@/lib/documents"
 
 const createSchema = z.object({
-  first_name: z.string().trim().min(1, "First name is required"),
+  first_name: z.string().trim().optional(),
   last_name: z.string().nullish(),
   email: z.string().nullish(),
   phone: z.string().nullish(),
@@ -24,7 +24,10 @@ const createSchema = z.object({
       return v
     }, z.boolean())
     .nullish(),
-})
+}).refine(
+  (value) => !!value.first_name || !!value.company?.trim(),
+  { message: "First name or company name is required", path: ["first_name"] }
+)
 
 export async function GET(request: Request) {
   const auth = await requireApiUser(request)
@@ -55,6 +58,11 @@ export async function POST(request: Request) {
       userId: auth.user.id,
       input: {
         ...parsed.data,
+        // The contacts table requires names, so a company-only customer uses
+        // the company name as its display name.
+        first_name:
+          parsed.data.first_name || (parsed.data.company ?? "").trim(),
+        last_name: parsed.data.first_name ? parsed.data.last_name : null,
         status: parsed.data.status ?? undefined,
         tax_rate: parsed.data.tax_rate ?? undefined,
         vat_registered:

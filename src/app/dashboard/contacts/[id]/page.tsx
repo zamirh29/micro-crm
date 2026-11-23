@@ -2,7 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, FileText, Receipt, Bell } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
-import { formatDate, formatCurrency, cn } from "@/lib/utils"
+import { contactDisplayName, isCompanyContact, formatDate, formatCurrency, cn } from "@/lib/utils"
 import type { ContactStatus, QuoteStatus, InvoiceStatus, ReminderStatus } from "@/types/database"
 import ContactActions from "./contact-actions"
 
@@ -97,9 +97,9 @@ export default async function ContactDetailPage({
           </Link>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
-              {contact.first_name} {contact.last_name}
+              {contactDisplayName(contact)}
             </h1>
-            {contact.company && (
+            {contact.company && !isCompanyContact(contact) && (
               <p className="text-sm text-muted-foreground">{contact.company}</p>
             )}
           </div>

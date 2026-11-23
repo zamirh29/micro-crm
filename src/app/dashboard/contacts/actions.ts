@@ -33,15 +33,22 @@ async function getSession() {
 export async function createContact(formData: FormData) {
   const { supabase, user, orgId } = await getSession()
 
+  const customerType = formData.get("customer_type") as "person" | "company" | null
+  const firstName = ((formData.get("first_name") as string) ?? "").trim()
+  const lastName = ((formData.get("last_name") as string) ?? "").trim()
+  const company = ((formData.get("company") as string) ?? "").trim()
+
   await createContactRecord(supabase, {
     orgId,
     userId: user.id,
     input: {
-      first_name: (formData.get("first_name") as string) ?? "",
-      last_name: (formData.get("last_name") as string) || null,
+      // A company without a named contact uses the company name as its
+      // display name. The contacts table still requires a first name.
+      first_name: firstName || (customerType === "company" ? company : ""),
+      last_name: customerType === "company" && !firstName ? "" : lastName || null,
       email: (formData.get("email") as string) || null,
       phone: (formData.get("phone") as string) || null,
-      company: (formData.get("company") as string) || null,
+      company: company || null,
       status: (formData.get("status") as ContactStatus) || "lead",
        notes: (formData.get("notes") as string) || null,
        tax_rate:
@@ -58,17 +65,22 @@ export async function createContact(formData: FormData) {
  
  export async function updateContact(id: string, formData: FormData) {
    const { supabase, user, orgId } = await getSession()
+
+   const customerType = formData.get("customer_type") as "person" | "company" | null
+   const firstName = ((formData.get("first_name") as string) ?? "").trim()
+   const lastName = ((formData.get("last_name") as string) ?? "").trim()
+   const company = ((formData.get("company") as string) ?? "").trim()
  
    await updateContactRecord(supabase, {
      orgId,
      userId: user.id,
      id,
      input: {
-       first_name: (formData.get("first_name") as string) ?? "",
-       last_name: (formData.get("last_name") as string) || null,
+       first_name: firstName || (customerType === "company" ? company : ""),
+       last_name: customerType === "company" && !firstName ? "" : lastName || null,
        email: (formData.get("email") as string) || null,
        phone: (formData.get("phone") as string) || null,
-       company: (formData.get("company") as string) || null,
+       company: company || null,
        status: (formData.get("status") as ContactStatus) || "lead",
        notes: (formData.get("notes") as string) || null,
        tax_rate:

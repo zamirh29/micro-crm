@@ -17,7 +17,10 @@ import { api } from '@/lib/api';
 const STATUSES = ['lead', 'prospect', 'client', 'inactive'] as const;
 type Status = (typeof STATUSES)[number];
 
+type CustomerType = 'person' | 'company';
+
 type Form = {
+  type: CustomerType;
   first_name: string;
   last_name: string;
   email: string;
@@ -30,6 +33,7 @@ type Form = {
 };
 
 const EMPTY: Form = {
+  type: 'person',
   first_name: '',
   last_name: '',
   email: '',
@@ -52,7 +56,12 @@ export default function NewCustomerScreen() {
 
   async function save() {
     if (saving) return;
-    if (!form.first_name.trim()) {
+    const companyName = form.company.trim();
+    if (form.type === 'company' && !companyName) {
+      setError('Company name is required');
+      return;
+    }
+    if (form.type === 'person' && !form.first_name.trim()) {
       setError('First name is required');
       return;
     }
@@ -60,14 +69,21 @@ export default function NewCustomerScreen() {
     setSaving(true);
     setError(null);
     try {
+      // The contacts table requires a first/last name, so a company-only
+      // customer uses the company name as its display name with a blank surname.
+      const firstName =
+        form.first_name.trim() || (form.type === 'company' ? companyName : '');
+      const lastName = form.type === 'company' && !form.first_name.trim()
+        ? ''
+        : form.last_name.trim();
       const result = await api<{ contact: { id: string } }>('/api/contacts', {
         method: 'POST',
         body: {
-          first_name: form.first_name.trim(),
-          last_name: form.last_name.trim() || null,
+          first_name: firstName,
+          last_name: lastName || null,
           email: form.email.trim() || null,
           phone: form.phone.trim() || null,
-          company: form.company.trim() || null,
+          company: companyName || null,
           status: form.status,
           tax_rate: form.tax_rate.trim() === '' ? null : Number(form.tax_rate),
           vat_registered: form.vat_registered,
@@ -95,39 +111,95 @@ export default function NewCustomerScreen() {
 
         <Text style={styles.sectionTitle}>Customer details</Text>
         <View style={styles.card}>
-          <Field
-            label="First name *"
-            value={form.first_name}
-            onChangeText={(value) => update('first_name', value)}
-            placeholder="John"
-          />
-          <Field
-            label="Last name"
-            value={form.last_name}
-            onChangeText={(value) => update('last_name', value)}
-            placeholder="Smith"
-          />
-          <Field
-            label="Email"
-            value={form.email}
-            onChangeText={(value) => update('email', value)}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholder="john@example.com"
-          />
-          <Field
-            label="Phone"
-            value={form.phone}
-            onChangeText={(value) => update('phone', value)}
-            keyboardType="phone-pad"
-            placeholder="07700 900000"
-          />
-          <Field
-            label="Company"
-            value={form.company}
-            onChangeText={(value) => update('company', value)}
-            placeholder="Company name"
-          />
+          <Text style={styles.fieldLabel}>Customer type</Text>
+          <View style={styles.chipRow}>
+            {(['person', 'company'] as const).map((value) => {
+              const active = form.type === value;
+              return (
+                <Pressable
+                  key={value}
+                  onPress={() => update('type', value)}
+                  style={[styles.chip, active && styles.chipActive]}>
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                    {value === 'person' ? 'Person' : 'Company'}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {form.type === 'company' ? (
+            <>
+              <Field
+                label="Company name *"
+                value={form.company}
+                onChangeText={(value) => update('company', value)}
+                placeholder="Acme Ltd"
+              />
+              <Field
+                label="Company email"
+                value={form.email}
+                onChangeText={(value) => update('email', value)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder="hello@acme.co.uk"
+              />
+              <Field
+                label="Company phone"
+                value={form.phone}
+                onChangeText={(value) => update('phone', value)}
+                keyboardType="phone-pad"
+                placeholder="020 7946 0000"
+              />
+              <Field
+                label="Contact first name (optional)"
+                value={form.first_name}
+                onChangeText={(value) => update('first_name', value)}
+                placeholder="John"
+              />
+              <Field
+                label="Contact last name (optional)"
+                value={form.last_name}
+                onChangeText={(value) => update('last_name', value)}
+                placeholder="Smith"
+              />
+            </>
+          ) : (
+            <>
+              <Field
+                label="First name *"
+                value={form.first_name}
+                onChangeText={(value) => update('first_name', value)}
+                placeholder="John"
+              />
+              <Field
+                label="Last name"
+                value={form.last_name}
+                onChangeText={(value) => update('last_name', value)}
+                placeholder="Smith"
+              />
+              <Field
+                label="Email"
+                value={form.email}
+                onChangeText={(value) => update('email', value)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder="john@example.com"
+              />
+              <Field
+                label="Phone"
+                value={form.phone}
+                onChangeText={(value) => update('phone', value)}
+                keyboardType="phone-pad"
+                placeholder="07700 900000"
+              />
+              <Field
+                label="Company (optional)"
+                value={form.company}
+                onChangeText={(value) => update('company', value)}
+                placeholder="Acme Ltd"
+              />
+            </>
+          )}
         </View>
 
         <Text style={styles.sectionTitle}>VAT and status</Text>

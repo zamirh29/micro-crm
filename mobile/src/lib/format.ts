@@ -52,3 +52,32 @@ export function shiftMonth(ym: string, delta: number): string {
 export function currentMonth(): string {
   return new Date().toISOString().slice(0, 7);
 }
+
+type ContactName = {
+  first_name: string;
+  last_name?: string | null;
+  company?: string | null;
+  email?: string | null;
+  phone?: string | null;
+};
+
+/** Company-only contacts use the existing company column as their identity. */
+export function isCompanyContact(contact: ContactName): boolean {
+  const company = contact.company?.trim();
+  return !!company && contact.first_name.trim() === company && !contact.last_name?.trim();
+}
+
+export function contactDisplayName(contact: ContactName): string {
+  if (isCompanyContact(contact)) return contact.company!.trim();
+  return `${contact.first_name ?? ''} ${contact.last_name ?? ''}`.trim();
+}
+
+export function contactSubtitle(contact: ContactName): string {
+  if (isCompanyContact(contact)) return contact.email ?? contact.phone ?? '';
+  return contact.company?.trim() || contact.email || contact.phone || '';
+}
+
+export function contactInitials(contact: ContactName): string {
+  if (isCompanyContact(contact)) return contact.company!.trim().slice(0, 2).toUpperCase();
+  return `${contact.first_name?.[0] ?? ''}${contact.last_name?.[0] ?? ''}`.toUpperCase();
+}

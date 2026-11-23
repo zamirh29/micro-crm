@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
-import { formatDate } from "@/lib/utils"
+import { contactDisplayName, contactSubtitle, formatDate } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 import type { ContactStatus } from "@/types/database"
 import ExportCsvButton from "@/components/export-csv-button"
@@ -116,11 +116,11 @@ export default async function ContactsPage() {
                         href={`/dashboard/contacts/${contact.id}`}
                         className="font-medium text-foreground hover:underline"
                       >
-                        {contact.first_name} {contact.last_name}
+                        {contactDisplayName(contact)}
                       </Link>
-                      {contact.company && (
+                      {contactSubtitle(contact) && (
                         <p className="text-xs text-muted-foreground">
-                          {contact.company}
+                          {contactSubtitle(contact)}
                         </p>
                       )}
                     </td>

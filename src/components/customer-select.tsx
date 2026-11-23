@@ -69,9 +69,10 @@ export default function CustomerSelect({
     e?.preventDefault()
     e?.stopPropagation()
 
-    const firstName = newCustomer.first_name.trim()
+    const firstName =
+      newCustomer.first_name.trim() || newCustomer.company.trim()
     if (!firstName) {
-      setError("First name is required")
+      setError("Enter a name or a company name")
       return
     }
 
@@ -91,9 +92,7 @@ export default function CustomerSelect({
       setCustomers((prev) => [...prev, data.contact])
       onChange(data.contact.id)
       setShowNew(false)
-      setCreatedName(
-        `${data.contact.first_name} ${data.contact.last_name}`.trim()
-      )
+      setCreatedName(customerLabel(data.contact))
       setTimeout(() => setCreatedName(null), 5000)
       setNewCustomer({
         first_name: "",
@@ -183,7 +182,7 @@ export default function CustomerSelect({
           <div className="grid gap-3 sm:grid-cols-2">
             <input
               type="text"
-              placeholder="First name"
+              placeholder="First name (or company name)"
               value={newCustomer.first_name}
               onChange={(e) =>
                 setNewCustomer({ ...newCustomer, first_name: e.target.value })

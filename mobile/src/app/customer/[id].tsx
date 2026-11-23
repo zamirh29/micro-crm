@@ -6,7 +6,7 @@ import { ActionBar } from '@/components/action-bar';
 import { ScreenState } from '@/components/screen-state';
 import { StatusChip } from '@/components/status-chip';
 import { api, useApi } from '@/lib/api';
-import { formatDate, formatMoney } from '@/lib/format';
+import { contactDisplayName, formatDate, formatMoney, isCompanyContact } from '@/lib/format';
 import type { Contact } from '@/lib/types';
 
 const STATUSES = ['lead', 'prospect', 'client', 'inactive'] as const;
@@ -28,7 +28,10 @@ type CustomerDetail = Contact & {
   invoices?: (DocSummary & { due_date?: string | null })[];
 };
 
+type CustomerType = 'person' | 'company';
+
 type Form = {
+  type: CustomerType;
   first_name: string;
   last_name: string;
   email: string;
@@ -55,9 +58,11 @@ export default function CustomerDetailScreen() {
 
   function startEditing() {
     if (!customer) return;
+    const companyCustomer = isCompanyContact(customer);
     setForm({
-      first_name: customer.first_name ?? '',
-      last_name: customer.last_name ?? '',
+      type: companyCustomer ? 'company' : 'person',
+      first_name: companyCustomer ? '' : (customer.first_name ?? ''),
+      last_name: companyCustomer ? '' : (customer.last_name ?? ''),
       email: customer.email ?? '',
       phone: customer.phone ?? '',
       company: customer.company ?? '',
@@ -78,20 +83,30 @@ export default function CustomerDetailScreen() {
 
   async function save() {
     if (!form || saving) return;
-    if (!form.first_name.trim()) {
+    const companyName = form.company.trim();
+    if (form.type === 'company' && !companyName) {
+      Alert.alert('Company name is required', 'Please enter the company name.');
+      return;
+    }
+    if (form.type === 'person' && !form.first_name.trim()) {
       Alert.alert('First name is required', 'Please enter the customer’s first name.');
       return;
     }
     setSaving(true);
     try {
+      const firstName =
+        form.first_name.trim() || (form.type === 'company' ? companyName : '');
+      const lastName = form.type === 'company' && !form.first_name.trim()
+        ? ''
+        : form.last_name.trim();
       await api(`/api/contacts/${id}`, {
         method: 'PATCH',
         body: {
-          first_name: form.first_name.trim(),
-          last_name: form.last_name.trim() || null,
+          first_name: firstName,
+          last_name: lastName || null,
           email: form.email.trim() || null,
           phone: form.phone.trim() || null,
-          company: form.company.trim() || null,
+          company: companyName || null,
           status: form.status,
           tax_rate: form.tax_rate.trim() === '' ? null : Number(form.tax_rate),
           vat_registered: form.vat_registered,
@@ -116,17 +131,51 @@ export default function CustomerDetailScreen() {
             <>
               <Text style={styles.sectionTitle}>Edit customer</Text>
               <View style={styles.card}>
-                <Field label="First name" value={form.first_name} onChangeText={(v) => update('first_name', v)} />
-                <Field label="Last name" value={form.last_name} onChangeText={(v) => update('last_name', v)} />
-                <Field
-                  label="Email"
-                  value={form.email}
-                  onChangeText={(v) => update('email', v)}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-                <Field label="Phone" value={form.phone} onChangeText={(v) => update('phone', v)} keyboardType="phone-pad" />
-                <Field label="Company" value={form.company} onChangeText={(v) => update('company', v)} />
+                <Text style={styles.fieldLabel}>Customer type</Text>
+                <View style={styles.statusRow}>
+                  {(['person', 'company'] as CustomerType[]).map((value) => {
+                    const active = form.type === value;
+                    return (
+                      <Pressable
+                        key={value}
+                        onPress={() => update('type', value)}
+                        style={[styles.statusChip, active && styles.statusChipActive]}>
+                        <Text style={[styles.statusChipText, active && styles.statusChipTextActive]}>
+                          {value === 'person' ? 'Person' : 'Company'}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {form.type === 'company' ? (
+                  <>
+                    <Field label="Company name" value={form.company} onChangeText={(v) => update('company', v)} />
+                    <Field
+                      label="Company email"
+                      value={form.email}
+                      onChangeText={(v) => update('email', v)}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                    <Field label="Company phone" value={form.phone} onChangeText={(v) => update('phone', v)} keyboardType="phone-pad" />
+                    <Field label="Contact first name (optional)" value={form.first_name} onChangeText={(v) => update('first_name', v)} />
+                    <Field label="Contact last name (optional)" value={form.last_name} onChangeText={(v) => update('last_name', v)} />
+                  </>
+                ) : (
+                  <>
+                    <Field label="First name" value={form.first_name} onChangeText={(v) => update('first_name', v)} />
+                    <Field label="Last name" value={form.last_name} onChangeText={(v) => update('last_name', v)} />
+                    <Field
+                      label="Email"
+                      value={form.email}
+                      onChangeText={(v) => update('email', v)}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                    <Field label="Phone" value={form.phone} onChangeText={(v) => update('phone', v)} keyboardType="phone-pad" />
+                    <Field label="Company (optional)" value={form.company} onChangeText={(v) => update('company', v)} />
+                  </>
+                )}
                 <Field
                   label="VAT Rate (%)"
                   value={form.tax_rate}
@@ -178,14 +227,14 @@ export default function CustomerDetailScreen() {
           ) : (
             <>
               <View style={styles.headerRow}>
-                <Text style={styles.name}>
-                  {customer.first_name} {customer.last_name}
-                </Text>
+                <Text style={styles.name}>{contactDisplayName(customer)}</Text>
                 <StatusChip status={customer.status} />
               </View>
 
               <View style={styles.card}>
-                {customer.company ? <Row label="Company" value={customer.company} /> : null}
+                {customer.company && !isCompanyContact(customer) ? (
+                  <Row label="Company" value={customer.company} />
+                ) : null}
                 {customer.email ? <Row label="Email" value={customer.email} /> : null}
                 {customer.phone ? <Row label="Phone" value={customer.phone} /> : null}
                 <Row
