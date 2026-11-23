@@ -71,9 +71,14 @@ export function buildTrueLayerAuthUrl(state: string): string {
   url.searchParams.set("scope", config.scope)
   url.searchParams.set("state", state)
   url.searchParams.set("country", "gb")
-  if (config.environment === "sandbox") {
-    url.searchParams.set("enable_mock", "true")
-  }
+  // TrueLayer requires at least one provider to be selected. Sandbox uses the
+  // dedicated mock provider; live uses all UK Open Banking and OAuth banks.
+  url.searchParams.set(
+    "providers",
+    config.environment === "sandbox"
+      ? "uk-cs-mock"
+      : "uk-ob-all uk-oauth-all"
+  )
   return url.toString()
 }
 
