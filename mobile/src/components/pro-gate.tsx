@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { PRO_TRIAL_LABEL, PRO_TRIAL_MONTHS } from '@/lib/purchases';
+
 interface Props {
   title: string;
   description: string;
@@ -30,10 +32,12 @@ export function ProGate({ title, description, features }: Props) {
         style={styles.button}
         onPress={() => router.push('/billing')}
         accessibilityRole="button"
-        accessibilityLabel="Upgrade to Pro">
-        <Text style={styles.buttonText}>Upgrade to Pro</Text>
+        accessibilityLabel={`Start ${PRO_TRIAL_LABEL}`}>
+        <Text style={styles.buttonText}>Start {PRO_TRIAL_LABEL}</Text>
       </Pressable>
-      <Text style={styles.footnote}>First 3 months free on Pro. Cancel anytime.</Text>
+      <Text style={styles.footnote}>
+        First {PRO_TRIAL_MONTHS} months free on Pro. Cancel anytime.
+      </Text>
     </ScrollView>
   );
 }

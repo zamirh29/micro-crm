@@ -21,6 +21,8 @@ import {
   initializePurchases,
   isPurchasesSupported,
   openSubscriptionManagement,
+  PRO_TRIAL_LABEL,
+  PRO_TRIAL_MONTHS,
   purchasePro,
   restorePro,
 } from '@/lib/purchases';
@@ -179,8 +181,8 @@ export default function SettingsScreen() {
           <>
             <Text style={styles.hint}>
               {price
-                ? `Pro is ${price} per month. Billed by the App Store or Google Play.`
-                : 'Unlock unlimited quotes, invoices and reports.'}
+                ? `Start a ${PRO_TRIAL_LABEL}, then ${price} per month. Billed by the App Store or Google Play.`
+                : `Unlock unlimited quotes, invoices and reports with ${PRO_TRIAL_MONTHS} months free.`}
             </Text>
             {canBuyInApp ? (
               <Pressable
@@ -191,7 +193,7 @@ export default function SettingsScreen() {
                 {busy ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <Text style={styles.upgradeText}>Upgrade to Pro</Text>
+                  <Text style={styles.upgradeText}>Start {PRO_TRIAL_LABEL}</Text>
                 )}
               </Pressable>
             ) : (

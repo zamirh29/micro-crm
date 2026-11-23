@@ -14,6 +14,7 @@ import {
 
 import { API_URL } from '@/lib/api';
 import { useSession } from '@/lib/auth';
+import { PRO_TRIAL_LABEL, PRO_TRIAL_MONTHS } from '@/lib/purchases';
 import { supabase } from '@/lib/supabase';
 
 const PRO_FEATURES = [
@@ -82,8 +83,8 @@ export default function BillingScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.title}>Billing</Text>
       <Text style={styles.intro}>
-        Manage your subscription and billing. First 3 months free on Pro, then £8 per
-        month. Cancel anytime.
+        Manage your subscription and billing. New subscribers get {PRO_TRIAL_MONTHS}{' '}
+        months free on Pro, then the standard monthly price. Cancel anytime.
       </Text>
 
       <Text style={styles.sectionTitle}>Current plan</Text>
@@ -147,7 +148,7 @@ export default function BillingScreen() {
                 <>
                   <Ionicons name="cart-outline" size={18} color="#ffffff" />
                   <Text style={styles.primaryText}>
-                    {isPro ? 'Manage subscription' : 'Upgrade in the app'}
+                    {isPro ? 'Manage subscription' : `Start ${PRO_TRIAL_LABEL}`}
                   </Text>
                 </>
               ) : (
@@ -178,6 +179,9 @@ export default function BillingScreen() {
           <Text style={styles.compareName}>Pro</Text>
           <Text style={styles.comparePrice}>£8 / month</Text>
         </View>
+        <Text style={styles.trialNote}>
+          First {PRO_TRIAL_MONTHS} months free for new subscribers.
+        </Text>
         {PRO_FEATURES.map((feature) => (
           <View key={feature} style={styles.featureRow}>
             <Ionicons name="checkmark" size={16} color="#16a34a" />
@@ -333,6 +337,11 @@ const styles = StyleSheet.create({
   comparePrice: {
     fontSize: 14,
     color: '#6b7280',
+  },
+  trialNote: {
+    fontSize: 12,
+    color: '#4f46e5',
+    fontWeight: '600',
   },
   featureRow: {
     flexDirection: 'row',
