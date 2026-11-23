@@ -11,29 +11,81 @@ function hash(value: string): string {
   return createHash("sha256").update(value).digest("hex")
 }
 
+function canonicalHeader(value: string): string {
+  return value
+    .replace(/^\ufeff/, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+}
+
 function parseDate(value: string): string | null {
-  const raw = value.trim()
+  const raw = value.trim().replace(/\u00a0/g, " ")
   if (!raw) return null
   if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10)
   if (/^\d{8}$/.test(raw)) {
     return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`
   }
-  const slash = raw.match(/^(\d{1,2})[\/](\d{1,2})[\/](\d{2,4})$/)
-  if (slash) {
-    const day = Number(slash[1])
-    const month = Number(slash[2])
-    let year = Number(slash[3])
+
+  const numeric = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/)
+  if (numeric) {
+    const day = Number(numeric[1])
+    const month = Number(numeric[2])
+    let year = Number(numeric[3])
     if (year < 100) year += 2000
-    const isoDay = String(day).padStart(2, "0")
-    const isoMonth = String(month).padStart(2, "0")
-    // Statements from UK banks normally use DD/MM/YYYY.
-    return `${year}-${isoMonth}-${isoDay}`
+    if (day < 1 || day > 31 || month < 1 || month > 12) return null
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
   }
+
+  const months: Record<string, number> = {
+    jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+    jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+  }
+  const named = raw.match(/^(\d{1,2})[\s-]([a-z]{3,})[\s-](\d{2,4})$/i)
+  if (named) {
+    const month = months[named[2].slice(0, 3).toLowerCase()]
+    const day = Number(named[1])
+    let year = Number(named[3])
+    if (year < 100) year += 2000
+    if (month && day >= 1 && day <= 31) {
+      return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+    }
+  }
+
   const parsed = new Date(raw)
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10)
 }
 
+function countDelimiter(line: string, delimiter: string): number {
+  let count = 0
+  let quoted = false
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i]
+    if (char === '"') {
+      if (quoted && line[i + 1] === '"') i += 1
+      else quoted = !quoted
+    } else if (char === delimiter && !quoted) {
+      count += 1
+    }
+  }
+  return count
+}
+
+function detectDelimiter(text: string): string {
+  const firstLine = text.split(/\r?\n/, 1)[0] ?? ""
+  let best = ","
+  let bestCount = -1
+  for (const delimiter of [",", ";", "\t", "|"]) {
+    const count = countDelimiter(firstLine, delimiter)
+    if (count > bestCount) {
+      best = delimiter
+      bestCount = count
+    }
+  }
+  return best
+}
+
 function splitCsv(text: string): string[][] {
+  const delimiter = detectDelimiter(text)
   const rows: string[][] = []
   let row: string[] = []
   let field = ""
@@ -53,7 +105,7 @@ function splitCsv(text: string): string[][] {
       }
     } else if (char === '"') {
       quoted = true
-    } else if (char === ",") {
+    } else if (char === delimiter) {
       row.push(field.trim())
       field = ""
     } else if (char === "\n") {
@@ -70,15 +122,84 @@ function splitCsv(text: string): string[][] {
   return rows
 }
 
+const DATE_NAMES = [
+  "date", "transactiondate", "transdate", "posteddate", "postingdate",
+  "bookeddate", "bookingdate", "valuedate", "statementdate", "dateposted",
+  "postdate", "paymentdate", "effective date", "effectivedate",
+].map(canonicalHeader)
+
+const DESCRIPTION_NAMES = [
+  "description", "transactiondescription", "transactiondetails", "details",
+  "narrative", "merchant", "payee", "reference", "paymentreference",
+  "particulars", "transactionnarrative", "descriptionnarrative", "memo",
+].map(canonicalHeader)
+
+const AMOUNT_NAMES = [
+  "amount", "amountgbp", "transactionamount", "transactionamountgbp",
+  "value", "amountvalue", "amountsterling",
+].map(canonicalHeader)
+
+const DEBIT_NAMES = [
+  "debit", "debitamount", "debitgbp", "moneyout", "moneyoutgbp", "paidout",
+  "paidoutgbp", "withdrawal", "withdrawals", "outgoing", "out", "spend",
+].map(canonicalHeader)
+
+const CREDIT_NAMES = [
+  "credit", "creditamount", "creditgbp", "moneyin", "moneyingbp", "paidin",
+  "paidingbp", "deposit", "deposits", "incoming", "in", "received",
+].map(canonicalHeader)
+
+const TYPE_NAMES = [
+  "type", "transactiontype", "txntype", "transactioncategory",
+].map(canonicalHeader)
+
 function findColumn(headers: string[], names: string[]): number {
-  return headers.findIndex((header) => names.includes(header.trim().toLowerCase()))
+  return headers.findIndex((header) => names.includes(canonicalHeader(header)))
 }
 
 function parseAmount(value: string): number | null {
-  const cleaned = value.replace(/[£$,\s]/g, "")
+  let cleaned = value
+    .trim()
+    .replace(/\u00a0/g, "")
+    .replace(/[\s£$€]/g, "")
+    .replace(/^(GBP|USD|EUR)\s*/i, "")
+    .replace(/\s*(GBP|USD|EUR)$/i, "")
   if (!cleaned) return null
+
+  let negative = false
+  if (/^\(.*\)$/.test(cleaned)) {
+    negative = true
+    cleaned = cleaned.slice(1, -1)
+  }
+  if (cleaned.startsWith("-")) {
+    negative = true
+    cleaned = cleaned.slice(1)
+  }
+  if (/^\d+(\.\d+)?-$/.test(cleaned)) {
+    negative = true
+    cleaned = cleaned.replace(/-$/, "")
+  }
+
+  const hasComma = cleaned.includes(",")
+  const hasDot = cleaned.includes(".")
+  if (hasComma && hasDot) {
+    if (cleaned.lastIndexOf(",") > cleaned.lastIndexOf(".")) {
+      cleaned = cleaned.replace(/\./g, "").replace(",", ".")
+    } else {
+      cleaned = cleaned.replace(/,/g, "")
+    }
+  } else if (hasComma) {
+    const parts = cleaned.split(",")
+    if (parts.length === 2 && /^\d{1,2}$/.test(parts[1])) {
+      cleaned = `${parts[0].replace(/\./g, "")}.${parts[1]}`
+    } else {
+      cleaned = cleaned.replace(/,/g, "")
+    }
+  }
+
   const number = Number(cleaned)
-  return Number.isFinite(number) ? number : null
+  if (!Number.isFinite(number)) return null
+  return negative ? -Math.abs(number) : number
 }
 
 export function parseCsvStatement(
@@ -88,21 +209,38 @@ export function parseCsvStatement(
   const rows = splitCsv(text)
   if (rows.length < 2) return { provider: "csv", rows: [], skipped: 0 }
 
-  const headers = rows[0].map((header) => header.replace(/^\ufeff/, ""))
-  const dateCol = findColumn(headers, ["date", "posted date", "booked date", "transaction date"])
-  const descriptionCol = findColumn(headers, ["description", "details", "narrative", "merchant", "payee"])
-  const amountCol = findColumn(headers, ["amount", "value", "transaction amount"])
-  const debitCol = findColumn(headers, ["debit", "money out", "paid out"])
-  const creditCol = findColumn(headers, ["credit", "money in", "paid in"])
-  const typeCol = findColumn(headers, ["type", "transaction type"])
-
-  if (dateCol < 0 || descriptionCol < 0 || (amountCol < 0 && debitCol < 0 && creditCol < 0)) {
-    return { provider: "csv", rows: [], skipped: rows.length - 1 }
+  let headerIndex = -1
+  let headers: string[] = []
+  const scanLimit = Math.min(rows.length, 25)
+  for (let i = 0; i < scanLimit; i += 1) {
+    const candidate = rows[i]
+    const hasDate = findColumn(candidate, DATE_NAMES) >= 0
+    const hasDescription = findColumn(candidate, DESCRIPTION_NAMES) >= 0
+    const hasAmount =
+      findColumn(candidate, AMOUNT_NAMES) >= 0 ||
+      findColumn(candidate, DEBIT_NAMES) >= 0 ||
+      findColumn(candidate, CREDIT_NAMES) >= 0
+    if (hasDate && hasDescription && hasAmount) {
+      headerIndex = i
+      headers = candidate
+      break
+    }
   }
+  if (headerIndex < 0) return { provider: "csv", rows: [], skipped: rows.length - 1 }
+
+  const dateCol = findColumn(headers, DATE_NAMES)
+  const descriptionCol = findColumn(headers, DESCRIPTION_NAMES)
+  const amountCol = findColumn(headers, AMOUNT_NAMES)
+  const debitCol = findColumn(headers, DEBIT_NAMES)
+  const creditCol = findColumn(headers, CREDIT_NAMES)
+  const typeCol = findColumn(headers, TYPE_NAMES)
 
   const parsed: NormalisedBankTransaction[] = []
   let skipped = 0
-  for (const cells of rows.slice(1, 2001)) {
+  const dataRows = rows.slice(headerIndex + 1, headerIndex + 2001)
+  skipped += Math.max(0, rows.length - (headerIndex + 1) - dataRows.length)
+
+  for (const cells of dataRows) {
     const date = parseDate(cells[dateCol] ?? "")
     const description = (cells[descriptionCol] ?? "").trim()
     let amount: number | null = null
