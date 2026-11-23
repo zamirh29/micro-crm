@@ -4,13 +4,57 @@ Status: proposed, post-launch. This is not part of the current Google Play / App
 
 ## Goal
 
-Let a user connect a UK bank account in read-only mode and pull settled bank transactions into MicroCRM:
+Let a user connect a supported bank account in read-only mode and pull settled bank transactions into MicroCRM. The UK is the first target market because MicroCRM already handles UK VAT/MTD, but the design must not be UK-only:
 
 - **Money in** → match to unpaid or part-paid invoices and record payments received.
 - **Money out** → create expenses/costs with supplier, category and VAT treatment.
 - **Transfers/refunds/own-account movements** → identify and exclude from profit reporting.
 
-The user must never enter bank login credentials into MicroCRM. Bank authentication and consent are handled by an FCA-authorised Open Banking provider.
+The user must never enter bank login credentials into MicroCRM. Bank authentication and consent are handled by a regulated Open Banking / account-information provider appropriate to the user’s country.
+
+## Global coverage strategy
+
+App Store and Google Play availability is **not** the same as bank-feed availability. Bank connections are country-by-country and bank-by-bank, and no single aggregator covers every major bank worldwide. The feature must therefore be built as a **provider-agnostic layer**, with one normalised MicroCRM transaction model and multiple regional providers behind it.
+
+### Provider shortlist
+
+Published coverage claims change frequently, so final selection needs a commercial and technical verification step.
+
+| Provider | Indicative strength | Notes |
+| --- | --- | --- |
+| Plaid | US, Canada, UK and Europe | Published coverage of 12,000+ institutions across roughly 20 countries. Strong US/Canada coverage. |
+| TrueLayer | UK and Europe | Strong UK/EU Open Banking coverage; good fit for the first UK release. |
+| Salt Edge | Broad international footprint | Claims 5,000+ banks across 50+ countries; useful for wider coverage. Verify business-account support and local permissions. |
+| Yodlee / Envestnet | US, Canada, UK, Australia, Mexico and others | Claims 16,000+ global data sources. Some coverage may use credential-based aggregation; only use consented, compliant modes. |
+| MX | US and Canada | Strong North American coverage; verify business accounts and pricing. |
+
+### Selection criteria
+
+- Country coverage and the specific **major banks** in that country.
+- **Business account** support, not just personal accounts.
+- Consent and revocation flows.
+- Transaction history depth and webhook reliability.
+- Data residency and cross-border transfer terms.
+- Local regulatory permissions, including FCA/Open Banking in the UK and equivalent regimes elsewhere.
+- Pricing per connection, per refresh and per user.
+- Whether credentials are ever handled by the provider (avoid where possible).
+
+### Feature gating
+
+- Store the user’s country from the business profile or billing country.
+- Show **Connect bank** only when a supported provider/bank exists for that country.
+- Otherwise show the existing **CSV/OFX import** path, which remains available everywhere the app is sold.
+- Maintain a `bank_coverage` table: `provider`, `country`, `bank_id`, `account_type`, `status`, `last_verified_at`.
+- Treat coverage as a maintained data problem, not a one-off integration.
+
+### Suggested rollout
+
+1. **Phase 1 — UK:** one provider, major UK banks, business accounts, MTD/VAT mapping.
+2. **Phase 2 — US, Canada and EU:** add providers with the strongest local coverage.
+3. **Phase 3 — Australia, New Zealand and other supported markets:** add providers only where coverage and compliance are confirmed.
+4. **Everywhere else:** CSV/OFX import and manual expenses remain available.
+
+Do not promise “all major banks worldwide” publicly. Promise a growing, country-specific list that users can check before connecting.
 
 ## Posting modes
 
@@ -40,9 +84,33 @@ bank_transactions
   posting_mode_at_import, review_status
   linked_invoice_id, linked_expense_id
   posted_at, created_at, updated_at
+
+bank_coverage
+  provider, country, bank_id, bank_name, account_types
+  supports_business, supports_transactions, status
+  last_verified_at
 ```
 
 Provider access tokens must be encrypted server-side and never exposed to the client. All tables are scoped by `user_id` with Supabase RLS.
+
+### Provider adapter interface
+
+Each regional provider implements the same internal contract so the rest of MicroCRM stays provider-agnostic:
+
+```text
+BankProvider
+  countries()
+  supportedBanks(country)
+  supportsBusinessAccounts(country, bankId)
+  createConnection(user, bankId, country)
+  exchangeToken(callback)
+  getTransactions(connection, cursor)
+  revokeConsent(connection)
+  verifyWebhook(request)
+  normaliseTransaction(rawTransaction)
+```
+
+Adding a new country should mean adding an adapter and coverage rows, not rewriting the invoice/expense matching logic.
 
 ## Matching rules
 
