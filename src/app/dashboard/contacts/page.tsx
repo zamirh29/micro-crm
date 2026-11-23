@@ -54,6 +54,7 @@ export default async function ContactsPage() {
               "Email",
               "Phone",
               "Company",
+              "Address",
               "Status",
               "Created",
             ]}
@@ -65,6 +66,7 @@ export default async function ContactsPage() {
                     c.email,
                     c.phone,
                     c.company,
+                    c.address,
                     c.status,
                     formatDate(c.created_at),
                   ])

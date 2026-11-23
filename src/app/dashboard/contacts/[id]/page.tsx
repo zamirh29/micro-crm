@@ -125,6 +125,14 @@ export default async function ContactDetailPage({
             </div>
             <div>
               <dt className="text-sm font-medium text-muted-foreground">
+                Address
+              </dt>
+              <dd className="whitespace-pre-line text-sm">
+                {contact.address || "\u2014"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-muted-foreground">
                 Status
               </dt>
               <dd>

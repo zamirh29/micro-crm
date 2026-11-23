@@ -43,6 +43,7 @@ export interface Contact {
   email: string | null
   phone: string | null
   company: string | null
+  address: string | null
   status: ContactStatus
   notes: string | null
   tax_rate: number | null

@@ -37,6 +37,7 @@ type Form = {
   email: string;
   phone: string;
   company: string;
+  address: string;
   status: Status;
   tax_rate: string;
   vat_registered: boolean;
@@ -66,6 +67,7 @@ export default function CustomerDetailScreen() {
       email: customer.email ?? '',
       phone: customer.phone ?? '',
       company: customer.company ?? '',
+      address: customer.address ?? '',
       status: customer.status,
       tax_rate:
         customer.tax_rate !== null && customer.tax_rate !== undefined
@@ -107,6 +109,7 @@ export default function CustomerDetailScreen() {
           email: form.email.trim() || null,
           phone: form.phone.trim() || null,
           company: companyName || null,
+          address: form.address.trim() || null,
           status: form.status,
           tax_rate: form.tax_rate.trim() === '' ? null : Number(form.tax_rate),
           vat_registered: form.vat_registered,
@@ -213,6 +216,15 @@ export default function CustomerDetailScreen() {
                     );
                   })}
                 </View>
+                <Text style={styles.fieldLabel}>Address</Text>
+                <TextInput
+                  style={[styles.input, styles.textarea]}
+                  value={form.address}
+                  onChangeText={(v) => update('address', v)}
+                  multiline
+                  placeholder="Street, town/city, postcode, country"
+                  textAlignVertical="top"
+                />
                 <Text style={styles.fieldLabel}>Notes</Text>
                 <TextInput
                   style={[styles.input, styles.textarea]}
@@ -237,6 +249,12 @@ export default function CustomerDetailScreen() {
                 ) : null}
                 {customer.email ? <Row label="Email" value={customer.email} /> : null}
                 {customer.phone ? <Row label="Phone" value={customer.phone} /> : null}
+                {customer.address ? (
+                  <View style={styles.addressRow}>
+                    <Text style={styles.rowLabel}>Address</Text>
+                    <Text style={styles.addressValue}>{customer.address}</Text>
+                  </View>
+                ) : null}
                 <Row
                   label="VAT Rate"
                   value={
@@ -385,6 +403,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
+  },
+  addressRow: {
+    gap: 4,
+  },
+  addressValue: {
+    fontSize: 15,
+    color: '#111827',
+    lineHeight: 20,
   },
   rowLabel: {
     fontSize: 15,

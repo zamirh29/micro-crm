@@ -5,6 +5,7 @@ export interface Contact {
   email: string | null;
   phone: string | null;
   company: string | null;
+  address: string | null;
   status: 'lead' | 'prospect' | 'client' | 'inactive';
   tax_rate: number | null;
   vat_registered: boolean;

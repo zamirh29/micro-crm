@@ -14,6 +14,7 @@ interface ContactEditFormProps {
     email: string | null
     phone: string | null
     company: string | null
+    address: string | null
     status: string
     notes: string | null
     tax_rate: number | null
@@ -338,6 +339,23 @@ export default function ContactEditForm({
             VAT Registered
           </label>
         </div>
+      </div>
+
+      <div>
+        <label
+          htmlFor="address"
+          className="block text-sm font-medium text-foreground"
+        >
+          Address
+        </label>
+        <textarea
+          id="address"
+          name="address"
+          rows={3}
+          defaultValue={contact.address ?? ""}
+          className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+          placeholder="Street, town/city, postcode, country"
+        />
       </div>
 
       <div>

@@ -8,6 +8,7 @@ interface Customer {
   first_name: string
   last_name: string
   company: string | null
+  address?: string | null
   tax_rate?: number | null
   vat_registered?: boolean
 }
@@ -47,6 +48,7 @@ export default function CustomerSelect({
     first_name: "",
     last_name: "",
     company: "",
+    address: "",
     email: "",
     phone: "",
   })
@@ -98,6 +100,7 @@ export default function CustomerSelect({
         first_name: "",
         last_name: "",
         company: "",
+        address: "",
         email: "",
         phone: "",
       })
@@ -222,6 +225,15 @@ export default function CustomerSelect({
               value={newCustomer.phone}
               onChange={(e) =>
                 setNewCustomer({ ...newCustomer, phone: e.target.value })
+              }
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+            <input
+              type="text"
+              placeholder="Address (optional)"
+              value={newCustomer.address}
+              onChange={(e) =>
+                setNewCustomer({ ...newCustomer, address: e.target.value })
               }
               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:col-span-2"
             />

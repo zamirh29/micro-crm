@@ -10,6 +10,7 @@ const patchSchema = z.object({
   email: z.string().nullish(),
   phone: z.string().nullish(),
   company: z.string().nullish(),
+  address: z.string().nullish(),
   status: z.enum(["lead", "prospect", "client", "inactive"]).optional(),
   tax_rate: z.coerce.number().min(0).max(100).nullish(),
   vat_registered: z.boolean().nullish(),

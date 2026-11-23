@@ -26,6 +26,7 @@ type Form = {
   email: string;
   phone: string;
   company: string;
+  address: string;
   status: Status;
   tax_rate: string;
   vat_registered: boolean;
@@ -39,6 +40,7 @@ const EMPTY: Form = {
   email: '',
   phone: '',
   company: '',
+  address: '',
   status: 'lead',
   tax_rate: '',
   vat_registered: false,
@@ -84,6 +86,7 @@ export default function NewCustomerScreen() {
           email: form.email.trim() || null,
           phone: form.phone.trim() || null,
           company: companyName || null,
+          address: form.address.trim() || null,
           status: form.status,
           tax_rate: form.tax_rate.trim() === '' ? null : Number(form.tax_rate),
           vat_registered: form.vat_registered,
@@ -246,8 +249,20 @@ export default function NewCustomerScreen() {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Notes</Text>
+        <Text style={styles.sectionTitle}>Address and notes</Text>
         <View style={styles.card}>
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Address</Text>
+            <TextInput
+              style={[styles.input, styles.textarea]}
+              value={form.address}
+              onChangeText={(value) => update('address', value)}
+              multiline
+              placeholder="Street, town/city, postcode, country"
+              textAlignVertical="top"
+            />
+          </View>
+          <Text style={styles.fieldLabel}>Notes</Text>
           <TextInput
             style={[styles.input, styles.textarea]}
             value={form.notes}

@@ -49,6 +49,7 @@ export async function createContact(formData: FormData) {
       email: (formData.get("email") as string) || null,
       phone: (formData.get("phone") as string) || null,
       company: company || null,
+      address: ((formData.get("address") as string) ?? "").trim() || null,
       status: (formData.get("status") as ContactStatus) || "lead",
        notes: (formData.get("notes") as string) || null,
        tax_rate:
@@ -81,6 +82,7 @@ export async function createContact(formData: FormData) {
        email: (formData.get("email") as string) || null,
        phone: (formData.get("phone") as string) || null,
        company: company || null,
+       address: ((formData.get("address") as string) ?? "").trim() || null,
        status: (formData.get("status") as ContactStatus) || "lead",
        notes: (formData.get("notes") as string) || null,
        tax_rate:

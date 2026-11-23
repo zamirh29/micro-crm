@@ -20,6 +20,7 @@ export interface ContactFields {
   email?: string | null
   phone?: string | null
   company?: string | null
+  address?: string | null
   status?: ContactStatus
   notes?: string | null
   tax_rate?: number | null
@@ -74,6 +75,7 @@ export async function createContactRecord(
     email: (input.email ?? "").trim() || null,
     phone: (input.phone ?? "").trim() || null,
     company: (input.company ?? "").trim() || null,
+    address: (input.address ?? "").trim() || null,
   }
   if (input.status) row.status = input.status
   if (input.notes !== undefined) row.notes = (input.notes ?? "").trim() || null
@@ -112,6 +114,7 @@ export async function updateContactRecord(
   if (input.email !== undefined) patch.email = (input.email ?? "").trim() || null
   if (input.phone !== undefined) patch.phone = (input.phone ?? "").trim() || null
   if (input.company !== undefined) patch.company = (input.company ?? "").trim() || null
+  if (input.address !== undefined) patch.address = (input.address ?? "").trim() || null
   if (input.status !== undefined) patch.status = input.status
   if (input.notes !== undefined) patch.notes = (input.notes ?? "").trim() || null
   if (input.tax_rate !== undefined) patch.tax_rate = input.tax_rate
