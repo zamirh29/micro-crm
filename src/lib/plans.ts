@@ -10,7 +10,7 @@ export const PLANS = {
   free: {
     name: "Free",
     price: 0,
-    description: "Free for your first 90 days — no card required.",
+    description: "Free forever, with monthly limits — no card required.",
     features: [
       "Up to 50 customers",
       "20 quotes per month",

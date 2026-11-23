@@ -90,7 +90,7 @@ export default function LandingPage() {
             </Link>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            90 days free on the Free plan. First {PRO_TRIAL_MONTHS} months of Pro on
+            Free forever on the Free plan. First {PRO_TRIAL_MONTHS} months of Pro on
             us. Cancel anytime.
           </p>
           <p className="mt-2 text-sm">

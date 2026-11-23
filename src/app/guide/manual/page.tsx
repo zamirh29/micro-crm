@@ -637,7 +637,7 @@ export default async function ManualPage() {
             <p className="mt-3 text-muted-foreground">
               {user
                 ? "Head back to your dashboard and put it into practice."
-                : "90 days free on the Free plan. No card required."}
+                : "Free forever on the Free plan. No card required."}
             </p>
             <Link
               href={user ? "/dashboard" : "/signup"}

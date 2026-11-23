@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { getImpersonation } from "@/lib/impersonation"
 
-export const FREE_TRIAL_DAYS = 90
 export const FREE_QUOTES_PER_MONTH = 20
 export const FREE_INVOICES_PER_MONTH = 20
 
@@ -22,7 +21,7 @@ export async function assertDocumentCreationAllowed(opts: {
 
   const { data: subscription } = await supabase
     .from("subscriptions")
-    .select("plan, created_at")
+    .select("plan")
     .eq("org_id", orgId)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -30,27 +29,7 @@ export async function assertDocumentCreationAllowed(opts: {
 
   if ((subscription?.plan ?? "free") === "pro") return
 
-  let trialStart: Date
-  if (subscription?.created_at) {
-    trialStart = new Date(subscription.created_at)
-  } else {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("created_at")
-      .eq("id", userId)
-      .maybeSingle()
-    trialStart = profile?.created_at ? new Date(profile.created_at) : new Date()
-  }
-
-  const trialEnd = new Date(
-    trialStart.getTime() + FREE_TRIAL_DAYS * 24 * 60 * 60 * 1000
-  )
-  if (Date.now() > trialEnd.getTime()) {
-    throw new PlanLimitError(
-      "Your 90-day free trial has ended. Upgrade to Pro to continue creating quotes and invoices."
-    )
-  }
-
+  // The Free plan never expires; only the monthly limits below apply.
   const startOfMonth = new Date(
     new Date().getFullYear(),
     new Date().getMonth(),

@@ -335,7 +335,7 @@ export default async function GuidePage() {
           <p className="mt-4 text-sm text-muted-foreground">
             {user
               ? "You are signed in. This tour shows the same screens you see in your account."
-              : "90 days free on the Free plan. Cancel anytime."}
+              : "Free forever on the Free plan. No card required."}
           </p>
         </section>
 
@@ -413,7 +413,7 @@ export default async function GuidePage() {
             <p className="mt-3 text-muted-foreground">
               {user
                 ? "Head back to your dashboard to pick up where you left off."
-                : "90 days free on the Free plan. No card required."}
+                : "Free forever on the Free plan. No card required."}
             </p>
             <Link
               href={user ? "/dashboard" : "/signup"}

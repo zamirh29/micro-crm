@@ -64,8 +64,8 @@ export default function TermsPage() {
       <h2>4. Free plan and Pro subscription</h2>
       <ul>
         <li>
-          The free plan includes up to 50 customers, 20 quotes and 20 invoices per
-          month and basic reminders.
+          The free plan is free forever and includes up to 50 customers, 20 quotes and
+          20 invoices per month and basic reminders.
         </li>
         <li>
           Pro costs <strong>£8 per month</strong> (or the price shown in your app
