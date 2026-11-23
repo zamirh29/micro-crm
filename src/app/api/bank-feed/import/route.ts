@@ -3,6 +3,7 @@ import { z } from "zod"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { requireApiUser } from "@/lib/api-auth"
 import { jsonError, readJson } from "@/lib/api-utils"
+import { uniqueByKey } from "@/lib/bank-feed/dedupe"
 import { parseBankStatement } from "@/lib/bank-feed/import-parser"
 import { suggestBankMatch } from "@/lib/bank-feed/matching"
 import { ensureFileConnection, logEvent } from "@/lib/bank-feed/store"
@@ -67,7 +68,13 @@ export async function POST(request: Request) {
       })
     )
 
-    const { error } = await admin.from("bank_transactions").upsert(prepared, {
+    const deduped = uniqueByKey(
+      prepared,
+      (row) => row.normalised_provider_transaction_id
+    )
+    const skipped = statement.skipped + (prepared.length - deduped.length)
+
+    const { error } = await admin.from("bank_transactions").upsert(deduped, {
       onConflict: "org_id,provider,normalised_provider_transaction_id",
     })
     if (error) throw new Error(error.message)
@@ -80,14 +87,14 @@ export async function POST(request: Request) {
       details: {
         fileName: parsed.data.fileName,
         provider: statement.provider,
-        imported: prepared.length,
-        skipped: statement.skipped,
+        imported: deduped.length,
+        skipped,
       },
     })
 
     return NextResponse.json({
-      imported: prepared.length,
-      skipped: statement.skipped,
+      imported: deduped.length,
+      skipped,
     })
   } catch (err) {
     return jsonError(err instanceof Error ? err.message : "Statement import failed", 400)

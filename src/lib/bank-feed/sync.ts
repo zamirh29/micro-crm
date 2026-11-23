@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getBankFeedConfig } from "@/lib/bank-feed/config"
+import { uniqueByKey } from "@/lib/bank-feed/dedupe"
 import { suggestBankMatch } from "@/lib/bank-feed/matching"
 import { postBankTransaction } from "@/lib/bank-feed/posting"
 import {
@@ -51,10 +52,11 @@ export async function syncConnection(params: {
     const prepared = await Promise.all(
       raw.map(async (txn) => buildTransactionRow(connection, txn))
     )
+    const deduped = uniqueByKey(prepared, (item) => item.key)
     const confidenceByKey = new Map(
-      prepared.map((item) => [item.key, item.confidence])
+      deduped.map((item) => [item.key, item.confidence])
     )
-    const rows = prepared.map((item) => item.row)
+    const rows = deduped.map((item) => item.row)
 
     const admin = createAdminClient()
     const { data: saved, error } = await admin

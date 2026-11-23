@@ -11,6 +11,31 @@ function hash(value: string): string {
   return createHash("sha256").update(value).digest("hex")
 }
 
+/**
+ * Bank exports often contain two identical-looking rows (same date, payee and
+ * amount). They are separate transactions, so give each occurrence its own
+ * stable ID instead of sending duplicate conflict keys to Postgres.
+ */
+function makeIdsUnique(
+  rows: NormalisedBankTransaction[]
+): NormalisedBankTransaction[] {
+  const seen = new Map<string, number>()
+  return rows.map((row) => {
+    const base = row.normalisedProviderTransactionId
+    const ordinal = (seen.get(base) ?? 0) + 1
+    seen.set(base, ordinal)
+    if (ordinal === 1) return row
+    const id = `${base}-${ordinal}`
+    return {
+      ...row,
+      providerTransactionId:
+        row.providerTransactionId === base ? id : row.providerTransactionId,
+      normalisedProviderTransactionId: id,
+      metadata: { ...row.metadata, duplicateOrdinal: ordinal },
+    }
+  })
+}
+
 function canonicalHeader(value: string): string {
   return value
     .replace(/^\ufeff/, "")
@@ -276,7 +301,7 @@ export function parseCsvStatement(
       metadata: { source: "csv", fileName },
     })
   }
-  return { provider: "csv", rows: parsed, skipped }
+  return { provider: "csv", rows: makeIdsUnique(parsed), skipped }
 }
 
 function ofxTag(block: string, tag: string): string | null {
@@ -323,7 +348,7 @@ export function parseOfxStatement(text: string, fileName: string): ParsedStateme
       metadata: { source: "ofx", fileName },
     })
   }
-  return { provider: "ofx", rows: parsed, skipped }
+  return { provider: "ofx", rows: makeIdsUnique(parsed), skipped }
 }
 
 export function parseBankStatement(

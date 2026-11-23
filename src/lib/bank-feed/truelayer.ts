@@ -53,6 +53,11 @@ function hashId(value: string): string {
 async function readJson<T>(response: Response): Promise<T> {
   const text = await response.text()
   if (!response.ok) {
+    if (response.status === 400 && /invalid_client/i.test(text)) {
+      throw new Error(
+        "TrueLayer client credentials do not match. In Vercel, TRUELAYER_CLIENT_SECRET must be the Sandbox secret for this Sandbox client ID, copied from TrueLayer Console → MicroCRM → Sandbox → Settings. Do not use any client value shown by the Mock Bank login page."
+      )
+    }
     throw new Error(`TrueLayer request failed (${response.status}): ${text.slice(0, 300)}`)
   }
   try {
