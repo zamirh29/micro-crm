@@ -54,6 +54,19 @@ Published coverage claims change frequently, so final selection needs a commerci
 3. **Phase 3 — Australia, New Zealand and other supported markets:** add providers only where coverage and compliance are confirmed.
 4. **Everywhere else:** CSV/OFX import and manual expenses remain available.
 
+### Target vs rollout
+
+The product target is global: UK, US, Canada, EU, Australia/New Zealand and other markets where the app can be downloaded. Live bank connections will still be phased because provider contracts, coverage and regulatory checks must be completed market by market.
+
+### Recommended provider stack
+
+- **Primary global adapter:** Plaid — broad US, Canada, UK and EU coverage through one API.
+- **UK/EU alternative or backup:** TrueLayer — strong Open Banking coverage and UK/EU specialism.
+- **Long-tail coverage:** Salt Edge or Yodlee — extended country/bank reach where the primary adapter has gaps.
+- **Fallback everywhere:** CSV/OFX import and manual expenses.
+
+Final provider choice depends on business-account coverage, pricing, webhook reliability, consent/revocation support and legal approval per region.
+
 Do not promise “all major banks worldwide” publicly. Promise a growing, country-specific list that users can check before connecting.
 
 ## Posting modes
