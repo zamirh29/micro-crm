@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import { LegalLayout } from "@/components/legal-layout"
+import { PRO_TRIAL_DAYS, PRO_TRIAL_MONTHS } from "@/lib/plans"
 
 export const metadata: Metadata = {
   title: "Terms of service · MicroCRM",
@@ -73,9 +74,9 @@ export default function TermsPage() {
           log and priority support.
         </li>
         <li>
-          New web subscribers may receive a free trial (currently 90 days). When
-          the trial ends the subscription renews automatically at the then-current
-          price unless you cancel first.
+          Eligible new web subscribers receive a {PRO_TRIAL_MONTHS}-month ({PRO_TRIAL_DAYS}-day)
+          free trial of Pro. When the trial ends the subscription renews automatically
+          at the then-current price unless you cancel first.
         </li>
         <li>
           Prices include VAT where applicable. We may change prices with

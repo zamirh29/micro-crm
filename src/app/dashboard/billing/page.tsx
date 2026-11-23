@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { createCheckoutSession, createPortalSession } from "./actions"
 import { Check, Loader2 } from "lucide-react"
-import { PLANS } from "@/lib/plans"
+import { PLANS, PRO_TRIAL_LABEL, PRO_TRIAL_MONTHS } from "@/lib/plans"
 import { formatCurrency } from "@/lib/utils"
 
 type PlanKey = "free" | "pro"
@@ -71,7 +71,8 @@ export default function BillingPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Billing</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage your subscription and billing. First 3 months free on Pro.
+          Manage your subscription and billing. First {PRO_TRIAL_MONTHS} months free
+          on Pro.
         </p>
       </div>
 
@@ -110,7 +111,7 @@ export default function BillingPage() {
                 {loading ? (
                   <Loader2 className="mx-auto h-4 w-4 animate-spin" />
                 ) : (
-                  "Upgrade to Pro"
+                  `Start ${PRO_TRIAL_LABEL}`
                 )}
               </button>
             )}
@@ -170,7 +171,7 @@ export default function BillingPage() {
                     {loading ? (
                       <Loader2 className="mx-auto h-4 w-4 animate-spin" />
                     ) : planKey === "pro" ? (
-                      `Upgrade to ${plan.name}`
+                      `Start ${PRO_TRIAL_LABEL}`
                     ) : (
                       "Downgrade"
                     )}

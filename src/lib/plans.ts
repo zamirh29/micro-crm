@@ -1,3 +1,11 @@
+/**
+ * Web Pro trial. Stripe Checkout accepts a day count, so 90 days is how the web
+ * implements the same 3-month trial offered in the mobile app and Google Play.
+ */
+export const PRO_TRIAL_MONTHS = 3
+export const PRO_TRIAL_DAYS = 90
+export const PRO_TRIAL_LABEL = `${PRO_TRIAL_MONTHS}-month free trial`
+
 export const PLANS = {
   free: {
     name: "Free",
@@ -13,7 +21,7 @@ export const PLANS = {
   pro: {
     name: "Pro",
     price: 800,
-    description: "Unlimited everything for growing sole traders.",
+    description: `First ${PRO_TRIAL_MONTHS} months free, then unlimited everything for growing businesses.`,
     features: [
       "Unlimited leads & invoices",
       "Unlimited quotes",

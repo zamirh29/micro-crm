@@ -1,3 +1,4 @@
+import { PRO_TRIAL_MONTHS } from "@/lib/plans"
 import { createClient } from "@/lib/supabase/server"
 import type { Metadata } from "next"
 import Link from "next/link"
@@ -456,7 +457,7 @@ const sections: ManualSection[] = [
       {
         label: "Upgrade",
         detail:
-          "Click Upgrade to Pro to open Stripe Checkout — your first 3 months are free.",
+          `Click Start ${PRO_TRIAL_MONTHS}-month free trial to open Stripe Checkout — your first ${PRO_TRIAL_MONTHS} months are free.`,
       },
       {
         label: "Manage or downgrade",

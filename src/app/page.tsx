@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Check, Users, FileText, Receipt, Bell, Landmark } from "lucide-react"
-import { PLANS } from "@/lib/plans"
+import { PLANS, PRO_TRIAL_MONTHS } from "@/lib/plans"
 import { formatCurrency } from "@/lib/utils"
 
 const features = [
@@ -90,7 +90,8 @@ export default function LandingPage() {
             </Link>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            90 days free on the Free plan. First 3 months of Pro on us. Cancel anytime.
+            90 days free on the Free plan. First {PRO_TRIAL_MONTHS} months of Pro on
+            us. Cancel anytime.
           </p>
           <p className="mt-2 text-sm">
             <Link

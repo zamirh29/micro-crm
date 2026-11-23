@@ -6,6 +6,7 @@ import {
   Check,
   Crown,
 } from "lucide-react"
+import { PRO_TRIAL_LABEL, PRO_TRIAL_MONTHS } from "@/lib/plans"
 import { createClient } from "@/lib/supabase/server"
 import { formatCurrency } from "@/lib/utils"
 import {
@@ -77,10 +78,10 @@ export default async function TaxReportPage() {
             href="/dashboard/billing"
             className="mt-8 inline-flex items-center gap-2 rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
           >
-            Upgrade to Pro
+            Start {PRO_TRIAL_LABEL}
           </Link>
           <p className="mt-4 text-xs text-muted-foreground">
-            First 3 months free on Pro. Cancel anytime.
+            First {PRO_TRIAL_MONTHS} months free on Pro. Cancel anytime.
           </p>
         </div>
       </div>
