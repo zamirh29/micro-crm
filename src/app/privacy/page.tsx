@@ -6,10 +6,10 @@ import { LegalLayout } from "@/components/legal-layout"
 export const metadata: Metadata = {
   title: "Privacy policy · MicroCRM",
   description:
-    "How DTMS HIRE LTD collects, uses and protects personal data in the MicroCRM web app and Android app.",
+    "How DTMS HIRE LTD collects, uses and protects personal data in the MicroCRM web app, Android app and iOS app.",
 }
 
-const UPDATED = "12 November 2026"
+const UPDATED = "23 November 2026"
 const CONTACT = "enquiries@dtmstechsolutions.co.uk"
 
 export default function PrivacyPage() {
@@ -19,9 +19,10 @@ export default function PrivacyPage() {
         MicroCRM is operated by DTMS HIRE LTD (&quot;we&quot;, &quot;us&quot;,
         &quot;our&quot;), a company registered in England and Wales. This policy
         explains what personal data we collect when you use the MicroCRM web app
-        at <strong>crm.dtmstechsolutions.co.uk</strong> and the MicroCRM Android
-        app (package <code>com.dtmstechsolutions.microcrm</code>), why we collect
-        it, and the choices you have.
+        at <strong>crm.dtmstechsolutions.co.uk</strong>, the MicroCRM Android app
+        and the MicroCRM iOS app (bundle/package ID{" "}
+        <code>com.dtmstechsolutions.microcrm</code>), why we collect it, and the
+        choices you have.
       </p>
       <p>
         We are the <strong>data controller</strong> for account and billing data.
@@ -56,15 +57,15 @@ export default function PrivacyPage() {
         <li>
           <strong>Imported documents.</strong> When you import a spreadsheet or
           PDF, the file is read and only the extracted text is sent to our server
-          to build a preview. When you photograph a document on Android, text
+          to build a preview. When you photograph a document on Android or iOS, text
           recognition runs <strong>on your device</strong>; the photo itself is
           not uploaded. Imports are never saved until you confirm them.
         </li>
         <li>
           <strong>Billing data.</strong> Plan, subscription status and the
           identifiers needed to manage your subscription. Card and bank details
-          are entered directly with Stripe (web) or Google Play (Android). We
-          never see or store full payment card numbers.
+          are entered directly with Stripe (web), Google Play (Android) or the
+          App Store (iOS). We never see or store full payment card numbers.
         </li>
         <li>
           <strong>HMRC connection data.</strong> If you connect HMRC for Making Tax
@@ -85,9 +86,9 @@ export default function PrivacyPage() {
           We do not use third-party behavioural analytics or sell personal data.
         </li>
         <li>
-          We do not request or use the Android advertising ID, and we do not
-          collect your contacts list, calendar, precise location, SMS or call
-          logs.
+          We do not request or use the Android advertising ID or Apple&apos;s
+          advertising identifier, and we do not collect your contacts list,
+          calendar, precise location, SMS or call logs.
         </li>
         <li>
           We do not upload the photos or files you import; only the extracted text
@@ -148,6 +149,10 @@ export default function PrivacyPage() {
           purchases and entitlement validation on Android.
         </li>
         <li>
+          <strong>Apple App Store and RevenueCat</strong> — in-app subscription
+          purchases and entitlement validation on iOS.
+        </li>
+        <li>
           <strong>HMRC</strong> — only when you connect and submit VAT returns
           through Making Tax Digital.
         </li>
@@ -164,8 +169,8 @@ export default function PrivacyPage() {
       <p>
         The web app uses strictly necessary cookies to keep you signed in through
         Supabase authentication. We do not use advertising or cross-site tracking
-        cookies. The Android app stores your session token in the device&apos;s
-        encrypted secure storage and does not use cookies for tracking.
+        cookies. The Android and iOS apps store your session token in the device&apos;s
+        encrypted secure storage and do not use cookies for tracking.
       </p>
 
       <h2>6. How long we keep data</h2>
@@ -236,6 +241,8 @@ export default function PrivacyPage() {
         DTMS HIRE LTD, 24 Trevose Road, London E17 4DR, United Kingdom.
         <br />
         Email: <a href={`mailto:${CONTACT}`}>{CONTACT}</a>
+        <br />
+        Phone: +44 7463 594253
       </p>
       <p>
         See also our <Link href="/terms">terms of service</Link>.

@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -12,7 +11,6 @@ import {
   View,
 } from 'react-native';
 
-import { API_URL } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { PRO_TRIAL_LABEL, PRO_TRIAL_MONTHS } from '@/lib/purchases';
 import { supabase } from '@/lib/supabase';
@@ -75,9 +73,7 @@ export default function BillingScreen() {
     plan?.plan === 'pro' &&
     (plan.status === 'active' || plan.status === 'trialing');
 
-  const openWebBilling = () => {
-    Linking.openURL(`${API_URL}/dashboard/billing`).catch(() => {});
-  };
+  const storeName = Platform.OS === 'ios' ? 'App Store' : 'Google Play';
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -126,37 +122,15 @@ export default function BillingScreen() {
                 : 'Upgrade to unlock unlimited customers, quotes, invoices and reports.'}
             </Text>
 
-            {Platform.OS === 'android' ? null : (
-              <Pressable
-                style={styles.primaryButton}
-                onPress={openWebBilling}
-                accessibilityRole="button"
-                accessibilityLabel="Open billing on the web">
-                <Ionicons name="open-outline" size={18} color="#ffffff" />
-                <Text style={styles.primaryText}>
-                  {isPro ? 'Manage billing on the web' : 'Upgrade to Pro on the web'}
-                </Text>
-              </Pressable>
-            )}
-
             <Pressable
-              style={Platform.OS === 'android' ? styles.primaryButton : styles.secondaryButton}
+              style={styles.primaryButton}
               onPress={() => router.push('/settings')}
               accessibilityRole="button"
-              accessibilityLabel="Open settings for in-app purchases">
-              {Platform.OS === 'android' ? (
-                <>
-                  <Ionicons name="cart-outline" size={18} color="#ffffff" />
-                  <Text style={styles.primaryText}>
-                    {isPro ? 'Manage subscription' : `Start ${PRO_TRIAL_LABEL}`}
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.secondaryText}>Buy in the app (Settings)</Text>
-                  <Ionicons name="chevron-forward" size={17} color="#4f46e5" />
-                </>
-              )}
+              accessibilityLabel={`Manage Pro in ${storeName}`}>
+              <Ionicons name="cart-outline" size={18} color="#ffffff" />
+              <Text style={styles.primaryText}>
+                {isPro ? 'Manage subscription' : `Start ${PRO_TRIAL_LABEL}`}
+              </Text>
             </Pressable>
           </>
         )}
@@ -193,9 +167,7 @@ export default function BillingScreen() {
       <View style={styles.helpCard}>
         <Text style={styles.helpTitle}>Where to manage your plan</Text>
         <Text style={styles.helpText}>
-          {Platform.OS === 'android'
-            ? 'Subscriptions bought in this app are handled by Google Play. Use Settings → Manage subscription to view, change or cancel your plan.'
-            : 'Web subscriptions are managed through Stripe from the web dashboard. If you subscribed through the App Store, use Settings → Manage subscription in this app.'}
+          {`Subscriptions bought in this app are handled by ${storeName}. Use Settings → Manage subscription to view, change or cancel your plan. Payments and refunds are handled by ${storeName}.`}
         </Text>
       </View>
     </ScrollView>
@@ -308,21 +280,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '700',
-  },
-  secondaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 9,
-    paddingVertical: 12,
-  },
-  secondaryText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#4f46e5',
   },
   compareHeader: {
     flexDirection: 'row',

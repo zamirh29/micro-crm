@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     "How to request deletion of your MicroCRM account and the data stored with it.",
 }
 
-const UPDATED = "12 November 2026"
+const UPDATED = "23 November 2026"
 const CONTACT = "enquiries@dtmstechsolutions.co.uk"
 
 export default function DeleteAccountPage() {
@@ -59,7 +59,7 @@ export default function DeleteAccountPage() {
         <li>
           <strong>Billing records</strong> (plan, invoices and payment status) are
           kept for six years where UK tax and accounting law requires it. Card
-          details are held by Stripe or Google Play, not by us, and are not part of
+          details are held by Stripe, Google Play or Apple, not by us, and are not part of
           your MicroCRM account.
         </li>
         <li>
@@ -75,16 +75,17 @@ export default function DeleteAccountPage() {
       <h2>Cancel a subscription first</h2>
       <p>
         Deleting your data does not automatically cancel a Pro subscription. Cancel
-        it from Billing in the web dashboard (Stripe) or from Google Play
-        subscriptions (Android) before requesting deletion, otherwise billing may
+        it from Billing in the web dashboard (Stripe), Google Play subscriptions
+        (Android), or Settings → Manage subscription (iOS, which opens Apple&apos;s
+        subscription settings) before requesting deletion, otherwise billing may
         continue.
       </p>
 
       <h2>Questions</h2>
       <p>
         See our <a href="/privacy">privacy policy</a> for how we handle personal
-        data, or email{" "}
-        <a href={`mailto:${CONTACT}`}>{CONTACT}</a>.
+        data, email <a href={`mailto:${CONTACT}`}>{CONTACT}</a>, or call +44 7463
+        594253.
       </p>
     </LegalLayout>
   )

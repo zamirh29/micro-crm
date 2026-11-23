@@ -7,7 +7,8 @@ const RC_API_BASE = "https://api.revenuecat.com/v1"
  * RevenueCat entitlement that maps to the Pro plan. Override with
  * REVENUECAT_PRO_ENTITLEMENT_ID if the dashboard entitlement is named differently.
  */
-export const RC_PRO_ENTITLEMENT = process.env.REVENUECAT_PRO_ENTITLEMENT_ID ?? "pro"
+export const RC_PRO_ENTITLEMENT =
+  process.env.REVENUECAT_PRO_ENTITLEMENT_ID ?? "dtms_crm_pro"
 
 /**
  * Webhook events that can change what the user is entitled to.

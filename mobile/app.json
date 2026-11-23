@@ -10,8 +10,19 @@
     "ios": {
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.dtmstechsolutions.microcrm",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+      "supportsTablet": false,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "privacyManifests": {
+        "NSPrivacyTracking": false,
+        "NSPrivacyTrackingDomains": [],
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+          }
+        ]
       }
     },
     "android": {
@@ -40,6 +51,13 @@
       ],
       "expo-secure-store",
       "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "MicroCRM needs photo library access so you can choose a receipt or invoice to import.",
+          "cameraPermission": "MicroCRM needs camera access so you can photograph a receipt or invoice to import."
+        }
+      ],
       [
         "expo-mlkit-ocr",
         {

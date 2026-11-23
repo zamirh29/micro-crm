@@ -35,12 +35,12 @@ the web app at https://crm.dtmstechsolutions.co.uk
 npx expo start
 ```
 
-Scan the QR code with Expo Go (Android) or the Camera app (iOS). Press `a` / `i` to open
-an Android or iOS emulator.
+Press `a` / `i` to open an Android or iOS emulator, or scan the QR code with a
+development build.
 
-The app only uses modules that ship inside Expo Go (`expo-secure-store`,
-`expo-file-system`, `expo-sharing`, Async Storage, NetInfo), so a development build is
-not needed while developing.
+This app uses native modules that are not included in Expo Go (`react-native-purchases`
+and `expo-mlkit-ocr`), so a development build is required:
+`npx expo run:android` / `npx expo run:ios`, or `npx eas-cli@latest build --profile development`.
 
 ## Checks
 
@@ -81,9 +81,12 @@ npx eas-cli@latest build -p android --profile preview
 
 `--profile production` produces an `.aab` for Google Play instead.
 
-**iOS** needs a paid Apple Developer account: `npx eas-cli@latest build -p ios`,
-then distribute through TestFlight — iOS cannot be sideloaded without a
-certificate.
+**iOS** needs a paid Apple Developer account, an App Store Connect app record for
+`com.dtmstechsolutions.microcrm`, and the `appl_...` RevenueCat key in the EAS
+production environment. Build with `npx eas-cli@latest build -p ios --profile production`,
+then submit to TestFlight with `npx eas-cli@latest submit -p ios --latest`. The App
+Store subscription product and 3-month introductory offer must also be configured in
+App Store Connect and RevenueCat before release. See `store/ios-listing.md`.
 
 To ship JavaScript-only fixes to an installed build without rebuilding, use
 `npx eas-cli@latest update`.

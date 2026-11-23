@@ -15,8 +15,9 @@ import Purchases, {
 export const PRO_ENTITLEMENT = 'dtms_crm_pro';
 
 /**
- * Free trial length promised in the app and configured on Google Play/Stripe.
- * The store enforces the actual trial; this keeps every screen's copy in sync.
+ * Free trial length promised in the app and configured on Google Play, the App
+ * Store and Stripe. The store enforces the actual trial; this keeps every
+ * screen's copy in sync.
  */
 export const PRO_TRIAL_MONTHS = 3;
 export const PRO_TRIAL_LABEL = `${PRO_TRIAL_MONTHS}-month free trial`;
@@ -148,8 +149,8 @@ export async function purchasePro(): Promise<PurchaseResult> {
 
   try {
     // Passing the Package (rather than a raw product ID) lets RevenueCat
-    // automatically apply the longest eligible Play free trial — currently the
-    // 3-month `free-trial` offer on `pro_monthly:pro-monthly`.
+    // automatically apply the longest eligible store free trial — currently the
+    // 3-month App Store introductory offer or Play `free-trial` offer.
     const result = await Purchases.purchasePackage(storeProduct);
     return { status: 'success', customerInfo: result.customerInfo };
   } catch (error) {

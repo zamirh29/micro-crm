@@ -66,7 +66,7 @@ export default function SettingsScreen() {
     };
   }, [userId]);
 
-  // A web (Stripe) subscription also grants Pro, so the store must not offer a
+  // A web subscription also grants Pro, so the store must not offer a
   // second purchase to someone who already pays on the web.
   useEffect(() => {
     if (!userId) return;
@@ -143,11 +143,18 @@ export default function SettingsScreen() {
   };
 
   const manageSubscription = async () => {
+    if (proOnWeb) {
+      Alert.alert(
+        'Web subscription',
+        'This Pro subscription is managed through your web account. Sign in on the website to change or cancel it.',
+      );
+      return;
+    }
     if (hasProEntitlement(customerInfo)) {
       await openSubscriptionManagement(customerInfo);
       return;
     }
-    await Linking.openURL(`${API_URL}/dashboard/billing`);
+    Alert.alert('No subscription to manage', 'Your current plan is Free.');
   };
 
   const proOnStore = hasProEntitlement(customerInfo);
@@ -165,7 +172,7 @@ export default function SettingsScreen() {
             <Text style={styles.hint}>
               {proOnStore
                 ? 'Renews through the App Store or Google Play.'
-                : 'Renews through your web account.'}
+                : 'Renews through your web account. Subscriptions bought in this app are managed by the store.'}
             </Text>
             <Pressable
               style={styles.secondaryButton}
@@ -173,7 +180,7 @@ export default function SettingsScreen() {
               disabled={busy}
             >
               <Text style={styles.secondaryButtonText}>
-                {proOnStore ? 'Manage subscription' : 'Manage billing'}
+                {proOnStore ? 'Manage subscription' : proOnWeb ? 'Web subscription' : 'Manage subscription'}
               </Text>
             </Pressable>
           </>

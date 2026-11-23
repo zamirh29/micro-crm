@@ -1,7 +1,7 @@
 # Google Play store listing — MicroCRM
 
 Package: `com.dtmstechsolutions.microcrm`
-Version: 1.0.8 (versionCode 8)
+Version: 1.0.10 (versionCode 10)
 Developer: DTMS Tech (DTMS HIRE LTD)
 
 ## App name (max 30 chars)

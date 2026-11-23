@@ -7,10 +7,10 @@ import { PRO_TRIAL_DAYS, PRO_TRIAL_MONTHS } from "@/lib/plans"
 export const metadata: Metadata = {
   title: "Terms of service · MicroCRM",
   description:
-    "The terms that govern use of the MicroCRM web app and Android app, provided by DTMS HIRE LTD.",
+    "The terms that govern use of the MicroCRM web app, Android app and iOS app, provided by DTMS HIRE LTD.",
 }
 
-const UPDATED = "12 November 2026"
+const UPDATED = "23 November 2026"
 const CONTACT = "enquiries@dtmstechsolutions.co.uk"
 
 export default function TermsPage() {
@@ -20,8 +20,9 @@ export default function TermsPage() {
         These terms are a legal agreement between you and DTMS HIRE LTD
         (&quot;we&quot;, &quot;us&quot;), a company registered in England and
         Wales at 24 Trevose Road, London E17 4DR. They cover the MicroCRM web app
-        at <strong>crm.dtmstechsolutions.co.uk</strong> and the MicroCRM Android app
-        (package <code>com.dtmstechsolutions.microcrm</code>).
+        at <strong>crm.dtmstechsolutions.co.uk</strong>, the MicroCRM Android app
+        and the MicroCRM iOS app (bundle/package ID{" "}
+        <code>com.dtmstechsolutions.microcrm</code>).
       </p>
       <p>
         By creating an account or using MicroCRM you agree to these terms. If you
@@ -74,7 +75,7 @@ export default function TermsPage() {
           log and priority support.
         </li>
         <li>
-          Eligible new web subscribers receive a {PRO_TRIAL_MONTHS}-month ({PRO_TRIAL_DAYS}-day)
+          Eligible new subscribers receive a {PRO_TRIAL_MONTHS}-month ({PRO_TRIAL_DAYS}-day)
           free trial of Pro. When the trial ends the subscription renews automatically
           at the then-current price unless you cancel first.
         </li>
@@ -98,9 +99,15 @@ export default function TermsPage() {
           from the app&apos;s subscription settings or Google Play.
         </li>
         <li>
+          <strong>iOS subscriptions</strong> are billed by Apple through the App
+          Store and renew automatically until cancelled. Manage or cancel from
+          Settings → Manage subscription in the app or from your Apple ID
+          subscription settings.
+        </li>
+        <li>
           Refunds are handled under the rules of the payment provider used. We do
-          not control Google Play or Stripe refund decisions, but you can always
-          contact us and we will help where we can.
+          not control Apple, Google Play or Stripe refund decisions, but you can
+          always contact us and we will help where we can.
         </li>
         <li>
           If a payment fails, Pro features may be suspended until payment is
@@ -124,8 +131,9 @@ export default function TermsPage() {
           <Link href="/privacy">privacy policy</Link>.
         </li>
         <li>
-          You can export your records at any time and delete your account from
-          Settings.
+          You can export your records at any time and request account deletion
+          from Settings using the steps on our <Link href="/delete-account">delete
+          account page</Link>.
         </li>
       </ul>
 
@@ -157,7 +165,7 @@ export default function TermsPage() {
       <p>
         Imports are provided as an aid. Always check extracted data before saving
         it. MicroCRM relies on third parties such as Supabase, Vercel, Resend,
-        Stripe, Google Play, RevenueCat and HMRC; we are not responsible for
+        Stripe, Google Play, Apple App Store, RevenueCat and HMRC; we are not responsible for
         outages or errors caused by those services, though we will work to restore
         service quickly.
       </p>
@@ -214,6 +222,8 @@ export default function TermsPage() {
         DTMS HIRE LTD, 24 Trevose Road, London E17 4DR, United Kingdom.
         <br />
         Email: <a href={`mailto:${CONTACT}`}>{CONTACT}</a>
+        <br />
+        Phone: +44 7463 594253
       </p>
     </LegalLayout>
   )
