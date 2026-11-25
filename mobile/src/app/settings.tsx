@@ -210,17 +210,17 @@ export default function SettingsScreen() {
                   : 'In-app purchase is unavailable in this build.'}
               </Text>
             )}
-            {isPurchasesSupported() ? (
-              <Pressable
-                style={styles.secondaryButton}
-                onPress={runRestore}
-                disabled={busy}
-              >
-                <Text style={styles.secondaryButtonText}>Restore purchases</Text>
-              </Pressable>
-            ) : null}
           </>
         )}
+        {isPurchasesSupported() ? (
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={runRestore}
+            disabled={busy}
+          >
+            <Text style={styles.secondaryButtonText}>Restore purchases</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <Text style={styles.sectionTitle}>Account</Text>
