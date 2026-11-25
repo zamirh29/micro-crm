@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import {
   FlatList,
   Modal,
@@ -48,6 +49,13 @@ export default function MonthEndScreen() {
   const { data: contactsData } = useApi<{ contacts: Contact[] }>(
     '/api/contacts',
     'cache:contacts'
+  );
+
+  // A purchase can activate Pro while this screen is still mounted in a tab.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
   );
 
   const contacts = useMemo(() => contactsData?.contacts ?? [], [contactsData]);

@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import type { CustomerInfo } from 'react-native-purchases';
 
-import { API_URL } from '@/lib/api';
+import { API_URL, api } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import {
   getProPackage,
@@ -45,6 +45,26 @@ export default function SettingsScreen() {
   const [storeReady, setStoreReady] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // Store purchases update RevenueCat immediately, but Pro features are gated on
+  // the server from Supabase. Mirror the entitlement into that row after a
+  // purchase/restore so features unlock without waiting for the webhook.
+  const syncSubscription = useCallback(async (): Promise<boolean> => {
+    try {
+      const result = await api<{
+        synced: boolean;
+        status?: string;
+        plan?: string;
+      }>('/api/subscription/sync', { method: 'POST' });
+      const pro =
+        result.data.plan === 'pro' &&
+        (result.data.status === 'active' || result.data.status === 'trialing');
+      setProOnWeb(pro);
+      return result.data.synced;
+    } catch {
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
     if (!userId) return;
     let active = true;
@@ -57,6 +77,8 @@ export default function SettingsScreen() {
       setCustomerInfo(info);
       setPrice(pkg?.product.priceString ?? null);
       setStoreReady(Boolean(pkg));
+      // Recover store purchases whose webhook has not reached Supabase yet.
+      if (hasProEntitlement(info)) await syncSubscription();
     })().catch(() => {
       // Store state is non-critical; the account section still renders.
     });
@@ -64,7 +86,7 @@ export default function SettingsScreen() {
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [userId, syncSubscription]);
 
   // A web subscription also grants Pro, so the store must not offer a
   // second purchase to someone who already pays on the web.
@@ -111,6 +133,13 @@ export default function SettingsScreen() {
 
       if (result.status === 'success') {
         setCustomerInfo(result.customerInfo);
+        const synced = await syncSubscription();
+        if (!synced) {
+          Alert.alert(
+            'Pro activated',
+            'Your subscription is active. Access will update shortly; reopen the app if a Pro feature still looks locked.'
+          );
+        }
         return;
       }
       if (result.status === 'cancelled') return;
@@ -130,7 +159,13 @@ export default function SettingsScreen() {
       const result = await restorePro();
       if (result.status === 'success') {
         setCustomerInfo(result.customerInfo);
-        Alert.alert('Restored', 'Your subscription is active on this account.');
+        const synced = await syncSubscription();
+        Alert.alert(
+          'Restored',
+          synced
+            ? 'Your subscription is active on this account.'
+            : 'Your subscription is active on this account. Access will update shortly.'
+        );
         return;
       }
       Alert.alert(

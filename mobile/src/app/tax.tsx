@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -27,6 +28,13 @@ export default function TaxScreen() {
   const { data, loading, error, offline, refresh } = useApi<TaxReport>(
     '/api/tax-report',
     'cache:tax-report'
+  );
+
+  // A purchase can activate Pro while this screen is still mounted in a tab.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
   );
 
   if (isProError(error)) {

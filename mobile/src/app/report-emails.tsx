@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -73,6 +74,13 @@ export default function ReportEmailsScreen() {
     subscriptions: ReportSubscription[];
   }>('/api/reports/subscriptions', 'cache:report-subscriptions');
   const [busy, setBusy] = useState<string | null>(null);
+
+  // A purchase can activate Pro while this screen is still mounted in a tab.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   const [reportType, setReportType] = useState<ReportType>('sales');
   const [frequency, setFrequency] = useState<ReportFrequency>('daily');
