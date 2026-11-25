@@ -88,9 +88,10 @@ type Form = {
 type Item = { key: string; description: string; quantity: string; unit_price: string };
 
 export default function QuoteEditScreen() {
-  const params = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; new_contact_id?: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
   const isNew = id === 'new';
+  const newContactId = typeof params.new_contact_id === 'string' ? params.new_contact_id : '';
   const { data, loading, error, refresh } = useApi<{
     quote: Quote;
     can_edit: boolean;
@@ -113,6 +114,7 @@ export default function QuoteEditScreen() {
             isNew
             quote={blankQuote()}
             canEditDate={false}
+            newContactId={newContactId}
           />
         ) : !quote ? (
           <Notice
@@ -129,7 +131,13 @@ export default function QuoteEditScreen() {
             }
           />
         ) : (
-          <QuoteEditForm key={id} id={id} quote={quote} canEditDate={canEditDate} />
+          <QuoteEditForm
+            key={id}
+            id={id}
+            quote={quote}
+            canEditDate={canEditDate}
+            newContactId={newContactId}
+          />
         )}
       </ScreenState>
     </>
@@ -140,11 +148,13 @@ function QuoteEditForm({
   id,
   quote,
   canEditDate,
+  newContactId,
   isNew = false,
 }: {
   id: string;
   quote: Quote;
   canEditDate: boolean;
+  newContactId: string;
   isNew?: boolean;
 }) {
   const [form, setForm] = useState<Form>(() => seedForm(quote));
@@ -159,14 +169,26 @@ function QuoteEditForm({
     data: contactsData,
     loading: contactsLoading,
     error: contactsError,
+    refresh: refreshContacts,
   } = useApi<{ contacts: Contact[] }>('/api/contacts', 'cache:contacts');
 
   const contacts = contactsData?.contacts ?? [];
 
+  // A customer created inside the picker returns here as a route parameter.
+  // Keep the route param as the selection source until the user picks someone
+  // else, and refresh the contact list so the new name resolves immediately.
+  const contactId = newContactId || form.contact_id;
+
+  useEffect(() => {
+    if (!newContactId) return;
+    refreshContacts();
+  }, [newContactId, refreshContacts]);
+
   const taxRate = parseTaxRate(form.tax_rate);
 
   const subtotal = items.reduce(
-    (sum, item) => sum + parseQuantity(item.quantity) * parsePrice(item.unit_price),
+    (sum, item) =>
+      sum + Math.round(parseQuantity(item.quantity) * parsePrice(item.unit_price) * 100),
     0
   );
   const taxAmount = Math.round(subtotal * (taxRate / 100));
@@ -181,13 +203,13 @@ function QuoteEditForm({
       )
     : contacts;
 
-  const selected = contacts.find((contact) => contact.id === form.contact_id);
+  const selected = contacts.find((contact) => contact.id === contactId);
   const brief = quote.contacts;
   const contactLabel = selected
     ? `${selected.first_name} ${selected.last_name}`
-    : form.contact_id === quote.contact_id && brief
+    : contactId === quote.contact_id && brief
       ? `${brief.first_name} ${brief.last_name}`
-      : form.contact_id
+      : contactId
         ? 'Customer unavailable'
         : 'Choose a customer';
 
@@ -212,7 +234,7 @@ function QuoteEditForm({
 
   async function save() {
     if (saving) return;
-    const validationError = validate(form, items, canEditDate);
+    const validationError = validate(contactId, form, items, canEditDate);
     if (validationError) {
       setFormError(validationError);
       return;
@@ -222,7 +244,7 @@ function QuoteEditForm({
     setFormError(null);
     try {
       const body: Record<string, unknown> = {
-        contact_id: form.contact_id,
+        contact_id: contactId,
         title: form.title.trim(),
         description: form.description.trim() || null,
         tax_rate: taxRate,
@@ -466,7 +488,9 @@ function QuoteEditForm({
                     <Text style={styles.itemFieldLabel}>Amount</Text>
                     <Text style={styles.itemTotal}>
                       {formatMoney(
-                        parseQuantity(item.quantity) * parsePrice(item.unit_price),
+                        Math.round(
+                          parseQuantity(item.quantity) * parsePrice(item.unit_price) * 100
+                        ),
                         form.currency
                       )}
                     </Text>
@@ -533,6 +557,7 @@ function QuoteEditForm({
                     style={styles.pickerRow}
                     onPress={() => {
                       update('contact_id', contact.id);
+                      router.setParams({ new_contact_id: undefined });
                       if (contact.tax_rate !== null && contact.tax_rate !== undefined) {
                         update('tax_rate', String(contact.tax_rate));
                       }
@@ -547,7 +572,7 @@ function QuoteEditForm({
                         {contact.company || contact.email || '—'}
                       </Text>
                     </View>
-                    {contact.id === form.contact_id ? (
+                    {contact.id === contactId ? (
                       <Ionicons name="checkmark" size={18} color="#4f46e5" />
                     ) : null}
                   </Pressable>
@@ -558,11 +583,23 @@ function QuoteEditForm({
                       ? 'Loading customers…'
                       : contactsError
                         ? contactsError
-                        : 'No customers match your search'}
+                        : 'No customers yet — create one below'}
                   </Text>
                 }
               />
             </View>
+            <Pressable
+              style={styles.pickerCreate}
+              onPress={() => {
+                setCustomerOpen(false);
+                const returnTo = isNew ? '/quote/edit/new' : `/quote/edit/${id}`;
+                router.push(`/customer/new?returnTo=${encodeURIComponent(returnTo)}`);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Create new customer">
+              <Ionicons name="person-add-outline" size={18} color="#4f46e5" />
+              <Text style={styles.pickerCreateText}>Create new customer</Text>
+            </Pressable>
             <Pressable style={styles.pickerDone} onPress={() => setCustomerOpen(false)}>
               <Text style={styles.pickerDoneText}>Done</Text>
             </Pressable>
@@ -682,8 +719,13 @@ function seedItems(quote: Quote): Item[] {
   }));
 }
 
-function validate(form: Form, items: Item[], canEditDate: boolean): string | null {
-  if (!form.contact_id) return 'Choose a customer';
+function validate(
+  contactId: string,
+  form: Form,
+  items: Item[],
+  canEditDate: boolean
+): string | null {
+  if (!contactId) return 'Choose a customer';
   if (!form.title.trim()) return 'Title is required';
   const validUntil = form.valid_until.trim();
   if (validUntil && !DATE_RE.test(validUntil)) return 'Valid until must be YYYY-MM-DD';
@@ -1007,6 +1049,22 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     paddingVertical: 24,
     fontSize: 15,
+  },
+  pickerCreate: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#c7d2fe',
+    borderRadius: 10,
+    paddingVertical: 12,
+    backgroundColor: '#eef2ff',
+  },
+  pickerCreateText: {
+    color: '#4f46e5',
+    fontSize: 15,
+    fontWeight: '700',
   },
   pickerDone: {
     backgroundColor: '#4f46e5',

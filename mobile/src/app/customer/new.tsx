@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -48,6 +48,7 @@ const EMPTY: Form = {
 };
 
 export default function NewCustomerScreen() {
+  const params = useLocalSearchParams<{ returnTo?: string }>();
   const [form, setForm] = useState<Form>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +94,20 @@ export default function NewCustomerScreen() {
           notes: form.notes.trim() || null,
         },
       });
-      router.replace(`/customer/${result.data.contact.id}`);
+      const contactId = result.data.contact.id;
+      const returnTo = typeof params.returnTo === 'string' ? params.returnTo : '';
+      // Only allow returning to quote/invoice forms. This prevents a crafted
+      // deep link from using customer creation to navigate anywhere else.
+      if (
+        returnTo.startsWith('/quote/edit/') ||
+        returnTo.startsWith('/invoice/edit/')
+      ) {
+        router.navigate(
+          `${returnTo}?new_contact_id=${encodeURIComponent(contactId)}` as Href
+        );
+        return;
+      }
+      router.replace(`/customer/${contactId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setSaving(false);
