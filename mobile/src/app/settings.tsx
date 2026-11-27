@@ -54,12 +54,15 @@ export default function SettingsScreen() {
         synced: boolean;
         status?: string;
         plan?: string;
+        outcome?: string;
       }>('/api/subscription/sync', { method: 'POST' });
       const pro =
         result.data.plan === 'pro' &&
         (result.data.status === 'active' || result.data.status === 'trialing');
       setProOnWeb(pro);
-      return result.data.synced;
+      // A 200 only means the request ran; the entitlement may still be missing
+      // from the server row (for example if RevenueCat lookup failed).
+      return pro;
     } catch {
       return false;
     }
