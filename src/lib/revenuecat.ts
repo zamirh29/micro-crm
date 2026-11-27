@@ -233,7 +233,6 @@ export async function syncSubscriberToSubscription(
     .from("memberships")
     .select("org_id")
     .eq("user_id", userId)
-    .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle()
 
