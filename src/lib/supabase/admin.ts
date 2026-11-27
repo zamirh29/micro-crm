@@ -1,13 +1,18 @@
-import { createServerClient } from "@supabase/ssr"
+import { createClient } from "@supabase/supabase-js"
 
+/**
+ * Service-role client for server-only work. Use the plain supabase-js client:
+ * the SSR cookie client can fall back to the anon role when a request has no
+ * session, which silently makes admin reads return no rows.
+ */
 export function createAdminClient() {
-  return createServerClient(
+  return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
-      cookies: {
-        getAll: () => [],
-        setAll: () => {},
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
       },
     }
   )
